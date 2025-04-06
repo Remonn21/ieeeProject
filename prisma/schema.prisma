@@ -1,0 +1,331 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
+model Board {
+  id          String   @id @default(cuid())
+  title       String
+  created     DateTime @default(now())
+  updated     DateTime @default(now())
+  socialLinks String[]
+  image       String
+  position    FameRank
+
+  // 👤 Link to User (the person)
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  // 🧑‍💼 Optional link to a Committee
+  committee   Committee? @relation(fields: [committeeId], references: [id])
+  committeeId String?
+}
+
+enum FameRank {
+  EXCOM
+  HEAD
+}
+
+model User {
+  id String @id @default(uuid())
+
+  firstName  String
+  lastName   String
+  nationalId String?
+
+  status UserStatus @default(ACTIVE)
+
+  email    String @unique
+  username String @unique
+  password String
+  phone    String
+  roles    Role[] @default([ATTENDEE])
+
+  committee   Committee? @relation("committeeMember", fields: [committeeId], references: [id])
+  committeeId String?
+
+  headOf Committee[] @relation("committeeHead")
+
+  memberProfile MemberProfile?
+
+  eventsAttendance         EventAttendance[]
+  eventsSesssionAttendance EventSessionAttendance[]
+  attendances              Attendance[]
+  EventRegistration        EventRegistration[]
+
+  boards Board[]
+
+  posts Post[]
+}
+
+model MemberProfile {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   @unique
+  university String
+  faculty    String
+  ieeeId     String?
+  joinedAt   DateTime @default(now())
+}
+
+model Committee {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  head        User    @relation("committeeHead", fields: [headId], references: [id])
+  headId      String
+
+  sessions Session[]
+
+  members User[]  @relation("committeeMember")
+  boards  Board[]
+  files   File[]
+}
+
+model Session {
+  id   String @id @default(uuid())
+  name String
+
+  hoursTaken Int?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+  startedAt DateTime? @default(now())
+
+  description String?
+  images      String[]
+
+  committee   Committee @relation(fields: [committeeId], references: [id])
+  committeeId String
+
+  attendances Attendance[]
+}
+
+model Attendance {
+  id        String  @id @default(uuid())
+  session   Session @relation(fields: [sessionId], references: [id])
+  sessionId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  status AttendanceStatus @default(ABSENT)
+
+  attendedAt DateTime?
+}
+
+enum AttendanceStatus {
+  ABSENT
+  PRESENT
+  LATE
+}
+
+model Event {
+  id                String   @id @default(uuid())
+  name              String
+  description       String?
+  startDate         DateTime
+  registrationStart DateTime
+  registrationEnd   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  category EventCategory
+
+  location String?
+
+  registrations EventRegistration[]
+
+  images String[]
+  videos String[]
+
+  speakers Speaker[]
+  agenda   AgendaItem[]
+
+  attenandances   EventAttendance[]
+  CustomFormField CustomFormField[]
+}
+
+model AgendaItem {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  startTime   DateTime
+  endTime     DateTime?
+
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
+
+  attendances EventSessionAttendance[]
+}
+
+model EventAttendance {
+  id           String @id @default(uuid())
+  event        Event  @relation(fields: [eventId], references: [id])
+  eventId      String
+  maxAttendees Int
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  checkedInAt DateTime @default(now())
+}
+
+model EventSessionAttendance {
+  id           String     @id @default(uuid())
+  agendaItem   AgendaItem @relation(fields: [agendaItemId], references: [id])
+  agendaItemId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  attendedAt DateTime @default(now())
+}
+
+model EventRegistration {
+  id      String @id @default(uuid())
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  submittedAt DateTime @default(now())
+
+  responses CustomFormResponse[]
+}
+
+model CustomFormField {
+  id       String        @id @default(uuid())
+  label    String
+  type     FormFieldType
+  required Boolean       @default(false)
+
+  // For `select` field types
+  options String[]
+
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
+
+  responses CustomFormResponse[]
+}
+
+model CustomFormResponse {
+  id      String          @id @default(uuid())
+  value   String
+  field   CustomFormField @relation(fields: [fieldId], references: [id])
+  fieldId String
+
+  registration   EventRegistration @relation(fields: [registrationId], references: [id])
+  registrationId String
+}
+
+model Speaker {
+  id       String  @id @default(uuid())
+  name     String
+  title    String
+  job      String?
+  company  String?
+  photoUrl String
+  linkedin String?
+  twitter  String?
+  bio      String?
+  event    Event   @relation(fields: [eventId], references: [id])
+  eventId  String
+}
+
+model Post {
+  id       String @id @default(uuid())
+  title    String @unique
+  content  String
+  author   User   @relation(fields: [authorId], references: [id])
+  authorId String
+
+  private Boolean @default(false)
+
+  images String[]
+  videos String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index(title)
+}
+
+model Awards {
+  id          String   @id @default(uuid())
+  name        String
+  title       String
+  winningDate DateTime
+  images      String[]
+  place       String
+  description String
+  year        Int
+}
+
+model FAQs {
+  id        String   @id @default(uuid())
+  question  String
+  answer    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model File {
+  id           String   @id @default(uuid())
+  name         String
+  size         Int
+  uploadedDate DateTime @default(now())
+  path         String
+  mimeType     String?
+
+  committee   Committee @relation(fields: [committeeId], references: [id])
+  committeeId String
+
+  entityType String
+  entityId   String
+
+  @@index([entityType, entityId])
+}
+
+enum EventCategory {
+  Conference
+  Workshop
+  Meetup
+}
+
+enum Role {
+  ATTENDEE
+  MEMBER
+  HEAD
+  EXCOM
+}
+
+enum FormFieldType {
+  TEXT
+  EMAIL
+  NUMBER
+  SELECT
+  FILE
+  DATE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}

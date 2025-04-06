@@ -1,0 +1,305 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table Board {
+  id String [pk]
+  title String [not null]
+  created DateTime [default: `now()`, not null]
+  updated DateTime [default: `now()`, not null]
+  socialLinks String[] [not null]
+  image String [not null]
+  position FameRank [not null]
+  user User [not null]
+  userId String [not null]
+  committee Committee
+  committeeId String
+}
+
+Table User {
+  id String [pk]
+  firstName String [not null]
+  lastName String [not null]
+  nationalId String
+  status UserStatus [not null, default: 'ACTIVE']
+  email String [unique, not null]
+  username String [unique, not null]
+  password String [not null]
+  phone String [not null]
+  roles Role[] [not null]
+  committee Committee
+  committeeId String
+  headOf Committee [not null]
+  memberProfile MemberProfile
+  eventsAttendance EventAttendance [not null]
+  eventsSesssionAttendance EventSessionAttendance [not null]
+  attendances Attendance [not null]
+  EventRegistration EventRegistration [not null]
+  boards Board [not null]
+  posts Post [not null]
+}
+
+Table MemberProfile {
+  id String [pk]
+  user User [not null]
+  userId String [unique, not null]
+  university String [not null]
+  faculty String [not null]
+  ieeeId String
+  joinedAt DateTime [default: `now()`, not null]
+}
+
+Table Committee {
+  id String [pk]
+  name String [not null]
+  description String
+  head User [not null]
+  headId String [not null]
+  sessions Session [not null]
+  members User [not null]
+  boards Board [not null]
+  files File [not null]
+}
+
+Table Session {
+  id String [pk]
+  name String [not null]
+  hoursTaken Int
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [default: `now()`, not null]
+  startedAt DateTime [default: `now()`]
+  description String
+  images String[] [not null]
+  committee Committee [not null]
+  committeeId String [not null]
+  attendances Attendance [not null]
+}
+
+Table Attendance {
+  id String [pk]
+  session Session [not null]
+  sessionId String [not null]
+  user User [not null]
+  userId String [not null]
+  status AttendanceStatus [not null, default: 'ABSENT']
+  attendedAt DateTime
+}
+
+Table Event {
+  id String [pk]
+  name String [not null]
+  description String
+  startDate DateTime [not null]
+  registrationStart DateTime [not null]
+  registrationEnd DateTime [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [default: `now()`, not null]
+  category EventCategory [not null]
+  location String
+  registrations EventRegistration [not null]
+  images String[] [not null]
+  videos String[] [not null]
+  speakers Speaker [not null]
+  agenda AgendaItem [not null]
+  attenandances EventAttendance [not null]
+  CustomFormField CustomFormField [not null]
+}
+
+Table AgendaItem {
+  id String [pk]
+  name String [not null]
+  description String
+  startTime DateTime [not null]
+  endTime DateTime
+  event Event [not null]
+  eventId String [not null]
+  attendances EventSessionAttendance [not null]
+}
+
+Table EventAttendance {
+  id String [pk]
+  event Event [not null]
+  eventId String [not null]
+  maxAttendees Int [not null]
+  user User [not null]
+  userId String [not null]
+  checkedInAt DateTime [default: `now()`, not null]
+}
+
+Table EventSessionAttendance {
+  id String [pk]
+  agendaItem AgendaItem [not null]
+  agendaItemId String [not null]
+  user User [not null]
+  userId String [not null]
+  attendedAt DateTime [default: `now()`, not null]
+}
+
+Table EventRegistration {
+  id String [pk]
+  event Event [not null]
+  eventId String [not null]
+  user User [not null]
+  userId String [not null]
+  submittedAt DateTime [default: `now()`, not null]
+  responses CustomFormResponse [not null]
+}
+
+Table CustomFormField {
+  id String [pk]
+  label String [not null]
+  type FormFieldType [not null]
+  required Boolean [not null, default: false]
+  options String[] [not null]
+  event Event [not null]
+  eventId String [not null]
+  responses CustomFormResponse [not null]
+}
+
+Table CustomFormResponse {
+  id String [pk]
+  value String [not null]
+  field CustomFormField [not null]
+  fieldId String [not null]
+  registration EventRegistration [not null]
+  registrationId String [not null]
+}
+
+Table Speaker {
+  id String [pk]
+  name String [not null]
+  title String [not null]
+  job String
+  company String
+  photoUrl String [not null]
+  linkedin String
+  twitter String
+  bio String
+  event Event [not null]
+  eventId String [not null]
+}
+
+Table Post {
+  id String [pk]
+  title String [unique, not null]
+  content String [not null]
+  author User [not null]
+  authorId String [not null]
+  private Boolean [not null, default: false]
+  images String[] [not null]
+  videos String[] [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Awards {
+  id String [pk]
+  name String [not null]
+  title String [not null]
+  winningDate DateTime [not null]
+  images String[] [not null]
+  place String [not null]
+  description String [not null]
+  year Int [not null]
+}
+
+Table FAQs {
+  id String [pk]
+  question String [not null]
+  answer String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table File {
+  id String [pk]
+  name String [not null]
+  size Int [not null]
+  uploadedDate DateTime [default: `now()`, not null]
+  path String [not null]
+  mimeType String
+  committee Committee [not null]
+  committeeId String [not null]
+  entityType String [not null]
+  entityId String [not null]
+}
+
+Enum FameRank {
+  EXCOM
+  HEAD
+}
+
+Enum AttendanceStatus {
+  ABSENT
+  PRESENT
+  LATE
+}
+
+Enum EventCategory {
+  Conference
+  Workshop
+  Meetup
+}
+
+Enum Role {
+  ATTENDEE
+  MEMBER
+  HEAD
+  EXCOM
+}
+
+Enum FormFieldType {
+  TEXT
+  EMAIL
+  NUMBER
+  SELECT
+  FILE
+  DATE
+}
+
+Enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+Ref: Board.userId > User.id
+
+Ref: Board.committeeId > Committee.id
+
+Ref: User.committeeId - Committee.id
+
+Ref: MemberProfile.userId - User.id
+
+Ref: Committee.headId - User.id
+
+Ref: Session.committeeId > Committee.id
+
+Ref: Attendance.sessionId > Session.id
+
+Ref: Attendance.userId > User.id
+
+Ref: AgendaItem.eventId > Event.id
+
+Ref: EventAttendance.eventId > Event.id
+
+Ref: EventAttendance.userId > User.id
+
+Ref: EventSessionAttendance.agendaItemId > AgendaItem.id
+
+Ref: EventSessionAttendance.userId > User.id
+
+Ref: EventRegistration.eventId > Event.id
+
+Ref: EventRegistration.userId > User.id
+
+Ref: CustomFormField.eventId > Event.id
+
+Ref: CustomFormResponse.fieldId > CustomFormField.id
+
+Ref: CustomFormResponse.registrationId > EventRegistration.id
+
+Ref: Speaker.eventId > Event.id
+
+Ref: Post.authorId > User.id
+
+Ref: File.committeeId > Committee.id
