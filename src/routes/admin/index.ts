@@ -5,6 +5,7 @@ import CommitteeRoutes from "./committeeRoutes";
 import sessionRoutes from "./sessionRoutes";
 import eventRoutes from "./eventRoutes";
 import postRoutes from "./postRoutes";
+import boardRoutes from "./boardRoutes";
 import { protect } from "../../controllers/authController";
 
 const router = Router();
@@ -15,6 +16,7 @@ router.use("/committees", CommitteeRoutes);
 router.use("/sessions", sessionRoutes);
 router.use("/events", eventRoutes);
 router.use("/posts", postRoutes);
+router.use("/board", boardRoutes);
 
 // app.use("/users", userRoutes);
 // app.use("/company", companyRoutes);

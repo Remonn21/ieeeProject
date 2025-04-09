@@ -207,3 +207,32 @@ export const checkAuth = (req: Request, res: Response) => {
     },
   });
 };
+
+export const optionalAuth = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const token = req.cookies.jwt;
+
+    if (!token) {
+      next();
+    }
+
+    const decoded = await verifyToken(token, next, res);
+
+    const userId = decoded.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        committee: true,
+        memberProfile: true,
+      },
+    });
+
+    if (!user) {
+      next();
+    }
+
+    req.user = user as UserWithRelations;
+    next();
+  }
+);

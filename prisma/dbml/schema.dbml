@@ -5,13 +5,14 @@
 Table Board {
   id String [pk]
   title String [not null]
+  name String [not null]
   created DateTime [default: `now()`, not null]
   updated DateTime [default: `now()`, not null]
   socialLinks String[] [not null]
   image String [not null]
   position FameRank [not null]
-  user User [not null]
-  userId String [not null]
+  user User
+  userId String
   committee Committee
   committeeId String
 }
@@ -92,6 +93,7 @@ Table Event {
   startDate DateTime [not null]
   registrationStart DateTime [not null]
   registrationEnd DateTime [not null]
+  private Boolean [not null, default: false]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [default: `now()`, not null]
   category EventCategory [not null]
@@ -100,9 +102,18 @@ Table Event {
   images String[] [not null]
   videos String[] [not null]
   speakers Speaker [not null]
-  agenda AgendaItem [not null]
+  eventDays EventDay [not null]
   attenandances EventAttendance [not null]
   CustomFormField CustomFormField [not null]
+}
+
+Table EventDay {
+  id String [pk]
+  date DateTime [not null]
+  label String
+  event Event [not null]
+  eventId String [not null]
+  agendaItems AgendaItem [not null]
 }
 
 Table AgendaItem {
@@ -111,8 +122,10 @@ Table AgendaItem {
   description String
   startTime DateTime [not null]
   endTime DateTime
-  event Event [not null]
-  eventId String [not null]
+  eventDay EventDay [not null]
+  eventDayId String [not null]
+  speaker Speaker [not null]
+  speakerId String [not null]
   attendances EventSessionAttendance [not null]
 }
 
@@ -167,7 +180,7 @@ Table CustomFormResponse {
 
 Table Speaker {
   id String [pk]
-  name String [not null]
+  name String [unique, not null]
   title String [not null]
   job String
   company String
@@ -175,8 +188,8 @@ Table Speaker {
   linkedin String
   twitter String
   bio String
-  event Event [not null]
-  eventId String [not null]
+  events Event [not null]
+  agenda AgendaItem [not null]
 }
 
 Table Post {
@@ -224,9 +237,16 @@ Table File {
   entityId String [not null]
 }
 
+Table EventToSpeaker {
+  speakersId String [ref: > Speaker.id]
+  eventsId String [ref: > Event.id]
+}
+
 Enum FameRank {
-  EXCOM
-  HEAD
+  counselor
+  excom
+  head
+  vice
 }
 
 Enum AttendanceStatus {
@@ -278,7 +298,11 @@ Ref: Attendance.sessionId > Session.id
 
 Ref: Attendance.userId > User.id
 
-Ref: AgendaItem.eventId > Event.id
+Ref: EventDay.eventId > Event.id
+
+Ref: AgendaItem.eventDayId > EventDay.id
+
+Ref: AgendaItem.speakerId > Speaker.id
 
 Ref: EventAttendance.eventId > Event.id
 
@@ -297,8 +321,6 @@ Ref: CustomFormField.eventId > Event.id
 Ref: CustomFormResponse.fieldId > CustomFormField.id
 
 Ref: CustomFormResponse.registrationId > EventRegistration.id
-
-Ref: Speaker.eventId > Event.id
 
 Ref: Post.authorId > User.id
 

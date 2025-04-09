@@ -20,24 +20,25 @@ generator dbml {
 model Board {
   id          String   @id @default(cuid())
   title       String
+  name        String
   created     DateTime @default(now())
   updated     DateTime @default(now())
   socialLinks String[]
   image       String
   position    FameRank
 
-  // 👤 Link to User (the person)
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
 
-  // 🧑‍💼 Optional link to a Committee
   committee   Committee? @relation(fields: [committeeId], references: [id])
   committeeId String?
 }
 
 enum FameRank {
-  EXCOM
-  HEAD
+  counselor
+  excom
+  head
+  vice
 }
 
 model User {
@@ -141,6 +142,7 @@ model Event {
   startDate         DateTime
   registrationStart DateTime
   registrationEnd   DateTime
+  private           Boolean  @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -155,10 +157,22 @@ model Event {
   videos String[]
 
   speakers Speaker[]
-  agenda   AgendaItem[]
+
+  eventDays EventDay[]
 
   attenandances   EventAttendance[]
   CustomFormField CustomFormField[]
+}
+
+model EventDay {
+  id    String   @id @default(uuid())
+  date  DateTime // Represents the specific day
+  label String? // Optional: e.g. "Day 1", "Hackathon Day", etc.
+
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
+
+  agendaItems AgendaItem[]
 }
 
 model AgendaItem {
@@ -168,8 +182,11 @@ model AgendaItem {
   startTime   DateTime
   endTime     DateTime?
 
-  event   Event  @relation(fields: [eventId], references: [id])
-  eventId String
+  eventDay   EventDay @relation(fields: [eventDayId], references: [id])
+  eventDayId String
+
+  speaker   Speaker @relation(fields: [speakerId], references: [id])
+  speakerId String
 
   attendances EventSessionAttendance[]
 }
@@ -237,7 +254,7 @@ model CustomFormResponse {
 
 model Speaker {
   id       String  @id @default(uuid())
-  name     String
+  name     String  @unique
   title    String
   job      String?
   company  String?
@@ -245,8 +262,11 @@ model Speaker {
   linkedin String?
   twitter  String?
   bio      String?
-  event    Event   @relation(fields: [eventId], references: [id])
-  eventId  String
+  events   Event[]
+
+  agenda AgendaItem[]
+
+  @@index([name])
 }
 
 model Post {

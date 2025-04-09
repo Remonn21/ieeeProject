@@ -25,9 +25,11 @@ export const getPosts = catchAsync(
     filters.private = false;
 
     const allowedForPrivate = ["HEAD", "EXCOM", "MEMBER"];
+    const isPrivileged =
+      user && user.roles.some((role) => allowedForPrivate.includes(role));
 
-    if (user && user.roles.some((role) => allowedForPrivate.includes(role))) {
-      filters.private = true;
+    if (!isPrivileged) {
+      filters.private = false;
     }
 
     const [posts, total] = await Promise.all([

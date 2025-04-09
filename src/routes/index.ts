@@ -4,6 +4,7 @@ import { checkAuth, createUser, login, protect } from "../controllers/authContro
 // import path from "path";
 
 import adminRoutes from "./admin";
+import publicRoutes from "./public";
 import { validate } from "../middlewares/validate";
 import { createUserSchema } from "../validations/userValidation";
 
@@ -17,5 +18,7 @@ router.post("/login", login);
 router.post("/create", validate(createUserSchema), createUser);
 
 router.use("/admin", adminRoutes);
+
+router.use("/", publicRoutes);
 
 export default router;

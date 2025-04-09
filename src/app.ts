@@ -1,7 +1,6 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
-import { User } from "@prisma/client";
 import cors from "cors";
 
 import apiRoutes from "./routes";
@@ -13,6 +12,7 @@ import apiRoutes from "./routes";
 // import companyRoleRoutes from "./routes/superAdmin/companyRoleRoutes";
 import ErrorController from "./controllers/ErrorController";
 import { UserWithRelations } from "./controllers/authController";
+import AppError from "./utils/appError";
 const app = express();
 
 declare global {
@@ -40,11 +40,20 @@ app.use(
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
+
+app.get("/health", (req: Request, res: Response) => {
+  res.status(200).json({ message: "Server is running" });
+});
+
 app.use(cookieParser());
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 
 app.use("/api", apiRoutes);
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  return next(new AppError("endpoint not found", 400));
+});
 
 app.use(ErrorController);
 
