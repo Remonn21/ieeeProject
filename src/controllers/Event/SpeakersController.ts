@@ -16,18 +16,7 @@ export const getEventSpeakers = catchAsync(
 
     const eventSpeakers = await prisma.event.findUnique({
       where: { id },
-      include: {
-        speakers: {
-          include: {
-            images: {
-              select: {
-                id: true,
-                url: true,
-              },
-            },
-          },
-        },
-      },
+      include: {},
     });
 
     if (!eventSpeakers) {
