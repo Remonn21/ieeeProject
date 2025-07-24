@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css");
+    </style>
+    <title>Acceptance Email</title>
+  </head>
+
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      font-family: Arial, sans-serif;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      style="
+        background-color: #ffffff;
+        max-width: 800px;
+        margin: 0 auto;
+        border-radius: 20px;
+        overflow: hidden;
+      "
+    >
+      <tr>
+        <td>
+          <table
+            role="presentation"
+            width="100%"
+            cellspacing="0"
+            cellpadding="0"
+            style="border-radius: 20px"
+          >
+            <tr>
+              <td style="text-align: center; padding: 20px; background-color: white">
+                <img
+                  src="https://i.imghippo.com/files/gDn8728yYA.jpg"
+                  alt=""
+                  style="width: 700px; border-radius: 30px 5px 30px 5px"
+                />
+              </td>
+            </tr>
+
+            <tr>
+              <td
+                style="
+                  padding: 30px;
+                  background-color: white;
+                  color: #333333;
+                  font-size: 16px;
+                  line-height: 1.5;
+                "
+              >
+                <p style="margin: 0; font-size: 30px; font-weight: bold; color: #006496">
+                  Dear, <span style="font-weight: normal; color: black"> {{name}}</span>
+                </p>
+                <p style="margin: 30px"></p>
+                <p style="margin: 10px 0; font-size: 20px">
+                  We’re excited to have you join us! You’ll find your ticket attached to
+                  this message. Please keep it handy, as you may be asked to show it upon
+                  entry.
+                </p>
+                <p style="margin: 20px"></p>
+                <!-- <p style="margin: 10px 0; font-size: 20px">
+                  Your skills, passion, and commitment will undoubtedly play a vital role
+                  in helping our branch achieve new milestones. We look forward to working
+                  with you!
+                </p> -->
+                <p style="margin: 30px"></p>
+                <p style="margin: 10px 0; font-size: 15px">
+                  Kindly follow the following steps:
+                </p>
+                <ul style="font-size: 15px">
+                  <li style="margin: 10px 0">
+                    Make sure to follow our
+                    <a
+                      style="font-weight: bold"
+                      href="https://www.facebook.com/IEEE.BUB.SB"
+                      >Facebook Page</a
+                    >,
+                    <a
+                      style="font-weight: bold"
+                      href="https://www.youtube.com/@ieeebub5503"
+                      >Youtube Channel</a
+                    >,
+                    <a
+                      style="font-weight: bold"
+                      href="https://www.linkedin.com/company/ieee-bub-sb"
+                      >LinkedIn</a
+                    >,
+                    <a
+                      style="font-weight: bold"
+                      href="https://www.instagram.com/ieee.bub/"
+                      >Instagram</a
+                    >.
+                  </li>
+
+                  <li style="margin: 10px 0">
+                    Also make sure your
+                    <a style="color: #22d143; font-weight: bold">Whatsapp</a> is active.
+                  </li>
+                </ul>
+              </td>
+            </tr>
+
+            <!-- Event Details Block - Centered -->
+            <tr>
+              <td style="padding: 20px; text-align: center; background-color: white">
+                <div
+                  style="
+                    max-width: 500px;
+                    background-color: #0a628d;
+                    border-radius: 10px;
+                    margin: 0 auto;
+                    padding: 20px;
+                  "
+                >
+                  <h2
+                    style="
+                      color: white;
+                      font-size: 24px;
+                      text-align: center;
+                      margin: 0 0 15px 0;
+                    "
+                  >
+                    Event Details
+                  </h2>
+                  <p style="color: white; font-size: 16px; margin: 8px 0">
+                    <strong>Date:</strong> <em>{{date}}</em>
+                  </p>
+                  <p style="color: white; font-size: 16px; margin: 8px 0">
+                    <strong>Check-In Time:</strong> <em>{{checkInTime}}</em>
+                  </p>
+                  <p style="color: white; font-size: 16px; margin: 8px 0">
+                    <strong>Location:</strong>
+                    <a
+                      style="color: white; text-decoration: underline"
+                      target="_blank"
+                      href="https://maps.app.goo.gl/BM5dESsVL6c7C6kd6"
+                      ><em>{{location}}</em></a
+                    >
+                  </p>
+
+                  {{#loginBlock}}
+                  <hr
+                    style="border: 1px solid rgba(255, 255, 255, 0.3); margin: 15px 0"
+                  />
+                  <h3 style="color: white; font-size: 20px; margin: 10px 0">
+                    Your Login Details
+                  </h3>
+                  <p style="color: white; font-size: 16px; margin: 8px 0">
+                    <strong>Email:</strong> <em>{{email}}</em>
+                  </p>
+                  <p style="color: white; font-size: 16px; margin: 8px 0">
+                    <strong>Password:</strong> <em>{{password}}</em>
+                  </p>
+                  {{/loginBlock}}
+                </div>
+              </td>
+            </tr>
+
+            <!-- QR Code Block - Centered -->
+            <tr>
+              <td
+                style="padding: 0 20px 20px; text-align: center; background-color: white"
+              >
+                <div
+                  style="
+                    max-width: 500px;
+                    background-color: #006496;
+                    border-radius: 10px;
+                    margin: 0 auto;
+                    margin-bottom: 30px;
+                    padding: 20px;
+                  "
+                >
+                  <h2
+                    style="
+                      color: white;
+                      font-size: 24px;
+                      text-align: center;
+                      margin: 0 0 15px 0;
+                    "
+                  >
+                    Event Entry QR Code
+                  </h2>
+                  <p style="color: white; font-size: 16px; margin: 0 0 15px 0">
+                    Scan this QR code at the entrance for quick check-in
+                  </p>
+                  <div
+                    style="
+                      background-color: white;
+                      width: 200px;
+                      height: 200px;
+                      margin: 0 auto;
+                      padding: 10px;
+                      border-radius: 10px;
+                    "
+                  >
+                    <!-- Replace with actual QR code image -->
+                    <img
+                      src="{{qrCodeBase64}}"
+                      alt="Event Entry QR Code"
+                      style="width: 180px; height: 180px"
+                    />
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <tr>
+        <td>
+          <div
+            class="footer"
+            style="
+              padding: 20px;
+              text-align: center;
+              background-color: #f4f4f4;
+              color: #5d5d6c;
+            "
+          >
+            <div style="margin: 0 auto">
+              <a
+                style="display: inline-block; margin: 5px auto 10px"
+                href="#"
+                target="_blank"
+              >
+                <img
+                  src="https://i.imghippo.com/files/qdX5905cU.png"
+                  style="margin: 0 auto; width: 220px; display: block; opacity: 0.5"
+                  alt="Company Footer Logo"
+                  onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg=='"
+                />
+              </a>
+              <p
+                style="
+                  font-family: Arial, Helvetica, sans-serif;
+                  font-size: 12px;
+                  line-height: 20px;
+                  margin: 0 auto;
+                  padding-bottom: 20px;
+                "
+              >
+                <span
+                  style="
+                    display: block;
+                    padding-bottom: 20px;
+                    color: #5d5d6c;
+                    font-family: Arial, Helvetica, sans-serif;
+                    font-size: 12px;
+                    line-height: 20px;
+                  "
+                >
+                  IEEE BUB, Inc., Qism Banha, Banha, Al-Qalyubia Governorate
+                </span>
+                <span style="display: block">
+                  <a
+                    href="https://IEEEBUB.com"
+                    style="
+                      color: #5d5d6c;
+                      text-decoration: underline;
+                      font-size: 12px;
+                      line-height: 20px;
+                    "
+                    target="_blank"
+                    >IEEEBUB.com</a
+                  >
+                  &nbsp;&nbsp;|&nbsp;&nbsp;
+                  <a
+                    href="mailto:abdelrahman.karam@ieee.org"
+                    style="color: #5d5d6c; text-decoration: none"
+                    target="_blank"
+                    >Contact Us</a
+                  >
+                </span>
+              </p>
+              <div style="margin: 0 auto; padding: 15px 0 10px; text-align: center">
+                <a
+                  href="https://www.facebook.com/IEEE.BUB.SB"
+                  style="margin: 0 12px; display: inline-block"
+                  target="_blank"
+                >
+                  <img
+                    src="https://i.imghippo.com/files/USD8538to.png"
+                    style="width: 27px; display: block; opacity: 0.5"
+                    alt="Facebook"
+                  />
+                </a>
+                <a
+                  href="https://www.linkedin.com/company/ieee-bub-sb/posts/?feedView=all"
+                  style="margin: 0 12px; display: inline-block"
+                  target="_blank"
+                >
+                  <img
+                    src="https://i.imghippo.com/files/Yqns9949RQw.png"
+                    style="width: 27px; display: block; opacity: 0.5"
+                    alt="LinkedIn"
+                  />
+                </a>
+                <a
+                  href="https://www.instagram.com/ieee.bub/"
+                  style="margin: 0 12px; display: inline-block"
+                  target="_blank"
+                >
+                  <img
+                    src="https://i.imghippo.com/files/LStK8367HPI.png"
+                    style="width: 27px; display: block; opacity: 0.5"
+                    alt="Instagram"
+                  />
+                </a>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

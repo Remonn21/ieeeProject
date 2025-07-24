@@ -13,6 +13,7 @@ import apiRoutes from "./routes";
 import ErrorController from "./controllers/ErrorController";
 import { UserWithRelations } from "./controllers/authController";
 import AppError from "./utils/appError";
+import path from "path";
 const app = express();
 
 declare global {
@@ -48,6 +49,9 @@ app.get("/health", (req: Request, res: Response) => {
 app.use(cookieParser());
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+
+app.use("/static", express.static(path.join(__dirname, "../uploads")));
+console.log("Static folder mapped to:", path.join(__dirname, "../uploads"));
 
 app.use("/api", apiRoutes);
 

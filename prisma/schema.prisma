@@ -17,13 +17,45 @@ generator dbml {
   provider = "prisma-dbml-generator"
 }
 
+model InternalRole {
+  id   String @id @default(cuid())
+  name String @unique
+
+  users       User[]
+  permissions InternalRolePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Permission {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+  group       String
+
+  roles InternalRolePermission[]
+
+  @@unique([name, group])
+}
+
+model InternalRolePermission {
+  id           String       @id @default(cuid())
+  roleId       String
+  permissionId String
+  role         InternalRole @relation(fields: [roleId], references: [id])
+  permission   Permission   @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+}
+
 model Board {
   id          String   @id @default(cuid())
   title       String
   name        String
   created     DateTime @default(now())
   updated     DateTime @default(now())
-  socialLinks String[]
+  socialLinks Json
   image       String
   position    FameRank
 
@@ -45,16 +77,24 @@ model User {
   id String @id @default(uuid())
 
   firstName  String
-  lastName   String
+  lastName   String? @default("")
   nationalId String?
 
   status UserStatus @default(ACTIVE)
 
-  email    String @unique
-  username String @unique
-  password String
-  phone    String
-  roles    Role[] @default([ATTENDEE])
+  email         String @unique
+  personalEmail String
+  password      String
+  phone         String
+  role          Role   @default(ATTENDEE)
+
+  // for forms
+
+  formSubmissions CustomFormSubmission[]
+
+  // for Admins
+  internalRole   InternalRole? @relation(fields: [internalRoleId], references: [id])
+  internalRoleId String?
 
   committee   Committee? @relation("committeeMember", fields: [committeeId], references: [id])
   committeeId String?
@@ -67,6 +107,8 @@ model User {
   eventsSesssionAttendance EventSessionAttendance[]
   attendances              Attendance[]
   EventRegistration        EventRegistration[]
+
+  foodOrders FoodOrder[]
 
   boards Board[]
 
@@ -89,6 +131,7 @@ model Committee {
   description String?
   head        User    @relation("committeeHead", fields: [headId], references: [id])
   headId      String
+  topics      Json?
 
   sessions Session[]
 
@@ -140,6 +183,7 @@ model Event {
   name              String
   description       String?
   startDate         DateTime
+  endDate           DateTime
   registrationStart DateTime
   registrationEnd   DateTime
   private           Boolean  @default(false)
@@ -153,26 +197,126 @@ model Event {
 
   registrations EventRegistration[]
 
+  form   CustomForm? @relation(fields: [formId], references: [id])
+  formId String?     @unique
+
   images String[]
   videos String[]
 
-  speakers Speaker[]
+  speakers EventSpeaker[]
+  sponsors EventSponsor[]
+  partners EventPartner[]
 
   eventDays EventDay[]
 
-  attenandances   EventAttendance[]
-  CustomFormField CustomFormField[]
+  attenandances EventAttendance[]
+
+  foodMenus  FoodMenu[]
+  foodOrders FoodOrder[]
+}
+
+model EventSpeaker {
+  id        String       @id @default(uuid())
+  event     Event        @relation(fields: [eventId], references: [id])
+  eventId   String
+  speaker   Speaker      @relation(fields: [speakerId], references: [id])
+  speakerId String
+  photo     SpeakerPhoto @relation(fields: [photoId], references: [id])
+  photoId   String
+
+  @@unique([eventId, speakerId])
+}
+
+model EventSponsor {
+  id        String       @id @default(uuid())
+  event     Event        @relation(fields: [eventId], references: [id])
+  eventId   String
+  sponsor   Sponsor      @relation(fields: [sponsorId], references: [id])
+  sponsorId String
+  photo     SponsorPhoto @relation(fields: [photoId], references: [id])
+  photoId   String
+
+  @@unique([eventId, sponsorId])
+}
+
+model EventPartner {
+  id        String       @id @default(uuid())
+  event     Event        @relation(fields: [eventId], references: [id])
+  eventId   String
+  partner   Partner      @relation(fields: [partnerId], references: [id])
+  partnerId String
+  photo     PartnerPhoto @relation(fields: [photoId], references: [id])
+  photoId   String
+
+  @@unique([eventId, partnerId])
 }
 
 model EventDay {
-  id    String   @id @default(uuid())
-  date  DateTime // Represents the specific day
-  label String? // Optional: e.g. "Day 1", "Hackathon Day", etc.
+  id      String   @id @default(uuid())
+  date    DateTime
+  label   String?
+  event   Event    @relation(fields: [eventId], references: [id])
+  eventId String
+
+  // foodMenu FoodMenu?
+
+  agendaItems AgendaItem[]
+}
+
+model FoodMenu {
+  id      String @id @default(uuid())
+  name    String
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
+  // day        EventDay? @relation(fields: [eventDayId], references: [id])
+  // eventDayId String?   @unique
+
+  foodItems FoodItem[]
+}
+
+model FoodItem {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  available   Boolean @default(true)
+
+  menu   FoodMenu @relation(fields: [menuId], references: [id])
+  menuId String
+
+  orders FoodOrderItem[]
+}
+
+model FoodOrder {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 
   event   Event  @relation(fields: [eventId], references: [id])
   eventId String
 
-  agendaItems AgendaItem[]
+  status OrderStatus @default(pending)
+
+  createdAt DateTime @default(now())
+
+  items FoodOrderItem[]
+}
+
+enum OrderStatus {
+  pending
+  rejected
+  accepted
+}
+
+model FoodOrderItem {
+  id      String    @id @default(uuid())
+  order   FoodOrder @relation(fields: [orderId], references: [id])
+  orderId String
+
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id])
+  foodItemId String
+
+  quantity Int @default(1)
 }
 
 model AgendaItem {
@@ -192,10 +336,10 @@ model AgendaItem {
 }
 
 model EventAttendance {
-  id           String @id @default(uuid())
-  event        Event  @relation(fields: [eventId], references: [id])
-  eventId      String
-  maxAttendees Int
+  id      String @id @default(uuid())
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
+  // maxAttendees Int
 
   user   User   @relation(fields: [userId], references: [id])
   userId String
@@ -219,27 +363,79 @@ model EventRegistration {
   event   Event  @relation(fields: [eventId], references: [id])
   eventId String
 
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  status RegistrationStatus @default(pending)
+  qrcode String?
 
   submittedAt DateTime @default(now())
 
-  responses CustomFormResponse[]
+  submission   CustomFormSubmission? @relation("EventSubmission", fields: [submissionId], references: [id])
+  submissionId String?               @unique
+
+  @@unique([eventId, userId])
+  @@index([eventId, userId, status])
+}
+
+enum RegistrationStatus {
+  pending
+  accepted
+  rejected
+}
+
+model CustomForm {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  type        FormType @default(ANY) // optional, like "event", "survey", "feedback"
+
+  startDate DateTime  @default(now())
+  endDate   DateTime? //TODO: make it required later
+
+  event  Event?
+  fields CustomFormField[]
+
+  responses CustomFormSubmission[]
+}
+
+enum FormType {
+  EVENT
+  SURVEY
+  FEEDBACK
+  POST
+  ANY
 }
 
 model CustomFormField {
-  id       String        @id @default(uuid())
-  label    String
-  type     FormFieldType
-  required Boolean       @default(false)
+  id          String        @id @default(uuid())
+  label       String
+  name        String
+  type        FormFieldType
+  placeholder String?
+  required    Boolean       @default(false)
+  min         Int?
+  max         Int?
+  pattern     String? //for custom validations (regex) for text and email
+  options     String[]
 
-  // For `select` field types
-  options String[]
-
-  event   Event  @relation(fields: [eventId], references: [id])
-  eventId String
-
+  form      CustomForm           @relation(fields: [formId], references: [id])
+  formId    String
   responses CustomFormResponse[]
+}
+
+model CustomFormSubmission {
+  id     String     @id @default(uuid())
+  form   CustomForm @relation(fields: [formId], references: [id])
+  formId String
+
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  submittedAt DateTime             @default(now())
+  responses   CustomFormResponse[]
+
+  registration EventRegistration? @relation("EventSubmission")
 }
 
 model CustomFormResponse {
@@ -248,25 +444,36 @@ model CustomFormResponse {
   field   CustomFormField @relation(fields: [fieldId], references: [id])
   fieldId String
 
-  registration   EventRegistration @relation(fields: [registrationId], references: [id])
-  registrationId String
+  submission   CustomFormSubmission @relation(fields: [submissionId], references: [id])
+  submissionId String
 }
 
 model Speaker {
-  id       String  @id @default(uuid())
-  name     String  @unique
-  title    String
-  job      String?
-  company  String?
-  photoUrl String
-  linkedin String?
-  twitter  String?
-  bio      String?
-  events   Event[]
+  id          String         @id @default(uuid())
+  name        String         @unique
+  title       String
+  job         String?
+  company     String?
+  socialLinks Json
+  bio         String?
+  images      SpeakerPhoto[]
+
+  eventsUsedIn EventSpeaker[]
 
   agenda AgendaItem[]
 
   @@index([name])
+}
+
+model SpeakerPhoto {
+  id        String  @id @default(uuid())
+  speaker   Speaker @relation(fields: [speakerId], references: [id])
+  speakerId String
+
+  photoUsedIn EventSpeaker[]
+
+  url     String
+  caption String?
 }
 
 model Post {
@@ -289,19 +496,65 @@ model Post {
 
 model Awards {
   id          String   @id @default(uuid())
-  name        String
   title       String
   winningDate DateTime
-  images      String[]
+  image       String
   place       String
   description String
-  year        Int
+}
+
+model Sponsor {
+  id              String         @id @default(uuid())
+  name            String
+  photos          SponsorPhoto[]
+  eventsSponsored EventSponsor[]
+
+  isSeasonSponsor Boolean
+}
+
+model SponsorPhoto {
+  id        String  @id @default(uuid())
+  sponsor   Sponsor @relation(fields: [sponsorId], references: [id])
+  sponsorId String
+
+  photoUsedIn EventSponsor[]
+
+  url String
+}
+
+model Partner {
+  id     String         @id @default(uuid())
+  name   String
+  photos PartnerPhoto[]
+
+  events EventPartner[]
+
+  isSeasonPartner Boolean
+}
+
+model PartnerPhoto {
+  id        String  @id @default(uuid())
+  partner   Partner @relation(fields: [partnerId], references: [id])
+  partnerId String
+
+  photoUsedIn EventPartner[]
+
+  url String
 }
 
 model FAQs {
   id        String   @id @default(uuid())
   question  String
   answer    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Insight {
+  id        String   @id @default(uuid())
+  icon      String
+  title     String
+  content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -324,9 +577,10 @@ model File {
 }
 
 enum EventCategory {
-  Conference
-  Workshop
-  Meetup
+  event
+  bootcamp
+  workshop
+  outing
 }
 
 enum Role {
@@ -341,8 +595,11 @@ enum FormFieldType {
   EMAIL
   NUMBER
   SELECT
+  DROPDOWN
+  OPTIONS
   FILE
   DATE
+  PARAGRAPH
 }
 
 enum UserStatus {

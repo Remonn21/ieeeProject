@@ -7,6 +7,8 @@ import {
   updateBoardMember,
 } from "../../controllers/boardController";
 import { createUploadMiddleware } from "../../middlewares/uploadMiddleware";
+import { createBoardMemberSchema } from "../../validations/boardValidation";
+import { validate } from "../../middlewares/validate";
 
 const router = Router();
 
@@ -14,8 +16,8 @@ router.use(authorizeRoles("EXCOM"));
 
 const uploadImage = createUploadMiddleware("temp").single("image");
 
-router.post("/", uploadImage, createBoardMember);
-router.patch("/:id", uploadImage, updateBoardMember);
+router.post("/", uploadImage, validate(createBoardMemberSchema), createBoardMember);
+router.patch("/:id", uploadImage, validate(createBoardMemberSchema), updateBoardMember);
 router.delete("/:id", deleteBoardMember);
 
 export default router;

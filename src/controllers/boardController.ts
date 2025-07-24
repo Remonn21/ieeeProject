@@ -15,24 +15,24 @@ export const getBoard = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const board = await prisma.board.findMany();
 
-    const groupedByPosition = board.reduce(
-      (acc, member) => {
-        const positionKey = member.position;
+    // const groupedByPosition = board.reduce(
+    //   (acc, member) => {
+    //     const positionKey = member.position;
 
-        if (!acc[positionKey]) {
-          acc[positionKey] = [];
-        }
+    //     if (!acc[positionKey]) {
+    //       acc[positionKey] = [];
+    //     }
 
-        acc[positionKey].push(member);
+    //     acc[positionKey].push(member);
 
-        return acc;
-      },
-      {} as Record<string, typeof board>
-    );
+    //     return acc;
+    //   },
+    //   {} as Record<string, typeof board>
+    // );
 
     res.status(200).json({
       status: "success",
-      data: { board: groupedByPosition },
+      data: { board },
     });
   }
 );
@@ -65,6 +65,20 @@ export const createBoardMember = catchAsync(
       entityName: `${slugify(`${position}-${title}`)}`,
     });
 
+    const socialLinksArray = socialLinks.map((link: any) => {
+      if (!link.url || !link.name || !link.icon) {
+        return next(new AppError("Missing fields in social links", 400));
+      }
+
+      return {
+        name: link.name,
+        icon: link.icon,
+        url: link.url,
+      };
+    });
+
+    console.log("links", socialLinksArray);
+
     const boardMember = await prisma.board.create({
       data: {
         position,
@@ -86,7 +100,7 @@ export const createBoardMember = catchAsync(
             }
           : undefined,
         image: imagePath[0] as string,
-        socialLinks,
+        socialLinks: socialLinksArray,
       },
     });
 

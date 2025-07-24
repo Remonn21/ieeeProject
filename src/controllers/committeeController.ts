@@ -6,7 +6,9 @@ import { prisma } from "../lib/prisma";
 
 export const createCommittee = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, description, headId } = req.body;
+    const { name, description, topics, headId } = req.body;
+
+    const topicsArray = Array.isArray(topics) ? topics : JSON.parse(topics);
 
     const user = await prisma.user.findUnique({
       where: { id: headId },
@@ -20,6 +22,7 @@ export const createCommittee = catchAsync(
       data: {
         name,
         description,
+        topics: JSON.stringify(topicsArray),
         head: {
           connect: {
             id: headId,
@@ -39,16 +42,33 @@ export const createCommittee = catchAsync(
 
 export const updateCommittee = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, description, headId } = req.body;
+    const { name, description, topics, headId } = req.body;
+
+    let topicsArray = [];
+
+    if (topics) {
+      topicsArray = Array.isArray(topics) ? topics : JSON.parse(topics);
+    }
 
     const committeeId = req.params.id;
 
-    const committe = await prisma.committee.update({
+    const committe = await prisma.committee.findUnique({
+      where: {
+        id: committeeId,
+      },
+    });
+
+    if (!committe) {
+      return next(new AppError("Committee not found", 404));
+    }
+
+    await prisma.committee.update({
       where: {
         id: committeeId,
       },
       data: {
         name,
+        topics: topics ? JSON.stringify(topicsArray) : JSON.stringify(committe.topics),
         description,
         head: {
           connect: {

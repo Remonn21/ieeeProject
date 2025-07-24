@@ -12,10 +12,10 @@ import { cleanHtml } from "../utils";
 
 export const getPosts = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { search } = req.query;
+    const { search, paginated } = req.query;
 
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
     const filters: any = {};
@@ -25,8 +25,7 @@ export const getPosts = catchAsync(
     filters.private = false;
 
     const allowedForPrivate = ["HEAD", "EXCOM", "MEMBER"];
-    const isPrivileged =
-      user && user.roles.some((role) => allowedForPrivate.includes(role));
+    const isPrivileged = user && allowedForPrivate.includes(user.role);
 
     if (!isPrivileged) {
       filters.private = false;
@@ -35,8 +34,8 @@ export const getPosts = catchAsync(
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
         where: filters,
-        skip,
-        take: limit,
+        ...(paginated === "true" && { skip, take: limit }),
+
         orderBy: {
           createdAt: "desc",
         },
@@ -49,9 +48,9 @@ export const getPosts = catchAsync(
     res.status(200).json({
       status: "success",
       data: {
-        total,
-        page,
-        pages: Math.ceil(total / limit),
+        ...(paginated === "true" && { total }),
+        ...(paginated === "true" && { page }),
+        ...(paginated === "true" && { pages: Math.ceil(total / limit) }),
         posts,
       },
     });

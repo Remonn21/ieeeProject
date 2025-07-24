@@ -10,6 +10,7 @@ export const validate =
       next();
     } catch (err) {
       if (err instanceof ZodError) {
+        console.log(err.errors);
         const message = err.errors
           .map((e) => `${e.path.join(".")}: ${e.message}`)
           .join(", ");

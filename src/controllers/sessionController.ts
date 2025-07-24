@@ -50,9 +50,8 @@ export const createSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { name, description, committeId, createdAt, startedAt } = req.body;
 
-    const selectcommitteId = req.user?.roles.includes("EXCOM")
-      ? committeId
-      : req.user?.committeeId;
+    const selectcommitteId =
+      req.user?.role !== "EXCOM" ? committeId : req.user?.committeeId;
 
     const committe = await prisma.committee.findUnique({
       where: { id: selectcommitteId },
@@ -63,7 +62,7 @@ export const createSession = catchAsync(
     }
 
     if (committe.headId !== req?.user?.id) {
-      if (!req.user?.roles.includes("EXCOM")) {
+      if (req.user?.role !== "EXCOM") {
         return next(
           new AppError(
             "You are not authorized to create a session for this committee",
@@ -119,7 +118,7 @@ export const updateSession = catchAsync(
     });
 
     if (session?.committee.headId !== req?.user?.id) {
-      if (!req.user?.roles.includes("EXCOM")) {
+      if (req.user?.role !== "EXCOM") {
         return next(
           new AppError(
             "You are not authorized to create a session for this committee",
@@ -164,7 +163,7 @@ export const deleteSession = catchAsync(
     });
 
     if (session?.committee.headId !== req?.user?.id) {
-      if (!req.user?.roles.includes("EXCOM")) {
+      if (req.user?.role !== "EXCOM") {
         return next(
           new AppError(
             "You are not authorized to create a session for this committee",

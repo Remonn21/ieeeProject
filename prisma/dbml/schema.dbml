@@ -2,13 +2,46 @@
 //// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 //// ------------------------------------------------------
 
+Table InternalRole {
+  id String [pk]
+  name String [unique, not null]
+  users User [not null]
+  permissions InternalRolePermission [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Permission {
+  id String [pk]
+  name String [unique, not null]
+  description String
+  group String [not null]
+  roles InternalRolePermission [not null]
+
+  indexes {
+    (name, group) [unique]
+  }
+}
+
+Table InternalRolePermission {
+  id String [pk]
+  roleId String [not null]
+  permissionId String [not null]
+  role InternalRole [not null]
+  permission Permission [not null]
+
+  indexes {
+    (roleId, permissionId) [unique]
+  }
+}
+
 Table Board {
   id String [pk]
   title String [not null]
   name String [not null]
   created DateTime [default: `now()`, not null]
   updated DateTime [default: `now()`, not null]
-  socialLinks String[] [not null]
+  socialLinks Json [not null]
   image String [not null]
   position FameRank [not null]
   user User
@@ -20,14 +53,17 @@ Table Board {
 Table User {
   id String [pk]
   firstName String [not null]
-  lastName String [not null]
+  lastName String [default: '']
   nationalId String
   status UserStatus [not null, default: 'ACTIVE']
   email String [unique, not null]
-  username String [unique, not null]
+  personalEmail String [not null]
   password String [not null]
   phone String [not null]
-  roles Role[] [not null]
+  role Role [not null, default: 'ATTENDEE']
+  formSubmissions CustomFormSubmission [not null]
+  internalRole InternalRole
+  internalRoleId String
   committee Committee
   committeeId String
   headOf Committee [not null]
@@ -36,6 +72,7 @@ Table User {
   eventsSesssionAttendance EventSessionAttendance [not null]
   attendances Attendance [not null]
   EventRegistration EventRegistration [not null]
+  foodOrders FoodOrder [not null]
   boards Board [not null]
   posts Post [not null]
 }
@@ -56,6 +93,7 @@ Table Committee {
   description String
   head User [not null]
   headId String [not null]
+  topics Json
   sessions Session [not null]
   members User [not null]
   boards Board [not null]
@@ -91,6 +129,7 @@ Table Event {
   name String [not null]
   description String
   startDate DateTime [not null]
+  endDate DateTime [not null]
   registrationStart DateTime [not null]
   registrationEnd DateTime [not null]
   private Boolean [not null, default: false]
@@ -99,12 +138,59 @@ Table Event {
   category EventCategory [not null]
   location String
   registrations EventRegistration [not null]
+  form CustomForm
+  formId String [unique]
   images String[] [not null]
   videos String[] [not null]
-  speakers Speaker [not null]
+  speakers EventSpeaker [not null]
+  sponsors EventSponsor [not null]
+  partners EventPartner [not null]
   eventDays EventDay [not null]
   attenandances EventAttendance [not null]
-  CustomFormField CustomFormField [not null]
+  foodMenus FoodMenu [not null]
+  foodOrders FoodOrder [not null]
+}
+
+Table EventSpeaker {
+  id String [pk]
+  event Event [not null]
+  eventId String [not null]
+  speaker Speaker [not null]
+  speakerId String [not null]
+  photo SpeakerPhoto [not null]
+  photoId String [not null]
+
+  indexes {
+    (eventId, speakerId) [unique]
+  }
+}
+
+Table EventSponsor {
+  id String [pk]
+  event Event [not null]
+  eventId String [not null]
+  sponsor Sponsor [not null]
+  sponsorId String [not null]
+  photo SponsorPhoto [not null]
+  photoId String [not null]
+
+  indexes {
+    (eventId, sponsorId) [unique]
+  }
+}
+
+Table EventPartner {
+  id String [pk]
+  event Event [not null]
+  eventId String [not null]
+  partner Partner [not null]
+  partnerId String [not null]
+  photo PartnerPhoto [not null]
+  photoId String [not null]
+
+  indexes {
+    (eventId, partnerId) [unique]
+  }
 }
 
 Table EventDay {
@@ -114,6 +200,45 @@ Table EventDay {
   event Event [not null]
   eventId String [not null]
   agendaItems AgendaItem [not null]
+}
+
+Table FoodMenu {
+  id String [pk]
+  name String [not null]
+  event Event [not null]
+  eventId String [not null]
+  foodItems FoodItem [not null]
+}
+
+Table FoodItem {
+  id String [pk]
+  name String [not null]
+  description String
+  price Float [not null]
+  available Boolean [not null, default: true]
+  menu FoodMenu [not null]
+  menuId String [not null]
+  orders FoodOrderItem [not null]
+}
+
+Table FoodOrder {
+  id String [pk]
+  user User [not null]
+  userId String [not null]
+  event Event [not null]
+  eventId String [not null]
+  status OrderStatus [not null, default: 'pending']
+  createdAt DateTime [default: `now()`, not null]
+  items FoodOrderItem [not null]
+}
+
+Table FoodOrderItem {
+  id String [pk]
+  order FoodOrder [not null]
+  orderId String [not null]
+  foodItem FoodItem [not null]
+  foodItemId String [not null]
+  quantity Int [not null, default: 1]
 }
 
 Table AgendaItem {
@@ -133,7 +258,6 @@ Table EventAttendance {
   id String [pk]
   event Event [not null]
   eventId String [not null]
-  maxAttendees Int [not null]
   user User [not null]
   userId String [not null]
   checkedInAt DateTime [default: `now()`, not null]
@@ -152,21 +276,56 @@ Table EventRegistration {
   id String [pk]
   event Event [not null]
   eventId String [not null]
-  user User [not null]
-  userId String [not null]
+  user User
+  userId String
+  status RegistrationStatus [not null, default: 'pending']
+  qrcode String
   submittedAt DateTime [default: `now()`, not null]
-  responses CustomFormResponse [not null]
+  submission CustomFormSubmission
+  submissionId String [unique]
+
+  indexes {
+    (eventId, userId) [unique]
+  }
+}
+
+Table CustomForm {
+  id String [pk]
+  name String [not null]
+  description String
+  type FormType [not null, default: 'ANY']
+  startDate DateTime [default: `now()`, not null]
+  endDate DateTime
+  event Event
+  fields CustomFormField [not null]
+  responses CustomFormSubmission [not null]
 }
 
 Table CustomFormField {
   id String [pk]
   label String [not null]
+  name String [not null]
   type FormFieldType [not null]
+  placeholder String
   required Boolean [not null, default: false]
+  min Int
+  max Int
+  pattern String
   options String[] [not null]
-  event Event [not null]
-  eventId String [not null]
+  form CustomForm [not null]
+  formId String [not null]
   responses CustomFormResponse [not null]
+}
+
+Table CustomFormSubmission {
+  id String [pk]
+  form CustomForm [not null]
+  formId String [not null]
+  user User
+  userId String
+  submittedAt DateTime [default: `now()`, not null]
+  responses CustomFormResponse [not null]
+  registration EventRegistration
 }
 
 Table CustomFormResponse {
@@ -174,8 +333,8 @@ Table CustomFormResponse {
   value String [not null]
   field CustomFormField [not null]
   fieldId String [not null]
-  registration EventRegistration [not null]
-  registrationId String [not null]
+  submission CustomFormSubmission [not null]
+  submissionId String [not null]
 }
 
 Table Speaker {
@@ -184,12 +343,20 @@ Table Speaker {
   title String [not null]
   job String
   company String
-  photoUrl String [not null]
-  linkedin String
-  twitter String
+  socialLinks Json [not null]
   bio String
-  events Event [not null]
+  images SpeakerPhoto [not null]
+  eventsUsedIn EventSpeaker [not null]
   agenda AgendaItem [not null]
+}
+
+Table SpeakerPhoto {
+  id String [pk]
+  speaker Speaker [not null]
+  speakerId String [not null]
+  photoUsedIn EventSpeaker [not null]
+  url String [not null]
+  caption String
 }
 
 Table Post {
@@ -207,19 +374,58 @@ Table Post {
 
 Table Awards {
   id String [pk]
-  name String [not null]
   title String [not null]
   winningDate DateTime [not null]
-  images String[] [not null]
+  image String [not null]
   place String [not null]
   description String [not null]
-  year Int [not null]
+}
+
+Table Sponsor {
+  id String [pk]
+  name String [not null]
+  photos SponsorPhoto [not null]
+  eventsSponsored EventSponsor [not null]
+  isSeasonSponsor Boolean [not null]
+}
+
+Table SponsorPhoto {
+  id String [pk]
+  sponsor Sponsor [not null]
+  sponsorId String [not null]
+  photoUsedIn EventSponsor [not null]
+  url String [not null]
+}
+
+Table Partner {
+  id String [pk]
+  name String [not null]
+  photos PartnerPhoto [not null]
+  events EventPartner [not null]
+  isSeasonPartner Boolean [not null]
+}
+
+Table PartnerPhoto {
+  id String [pk]
+  partner Partner [not null]
+  partnerId String [not null]
+  photoUsedIn EventPartner [not null]
+  url String [not null]
 }
 
 Table FAQs {
   id String [pk]
   question String [not null]
   answer String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Insight {
+  id String [pk]
+  icon String [not null]
+  title String [not null]
+  content String [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
 }
@@ -237,11 +443,6 @@ Table File {
   entityId String [not null]
 }
 
-Table EventToSpeaker {
-  speakersId String [ref: > Speaker.id]
-  eventsId String [ref: > Event.id]
-}
-
 Enum FameRank {
   counselor
   excom
@@ -255,10 +456,31 @@ Enum AttendanceStatus {
   LATE
 }
 
+Enum OrderStatus {
+  pending
+  rejected
+  accepted
+}
+
+Enum RegistrationStatus {
+  pending
+  accepted
+  rejected
+}
+
+Enum FormType {
+  EVENT
+  SURVEY
+  FEEDBACK
+  POST
+  ANY
+}
+
 Enum EventCategory {
-  Conference
-  Workshop
-  Meetup
+  event
+  bootcamp
+  workshop
+  outing
 }
 
 Enum Role {
@@ -273,8 +495,11 @@ Enum FormFieldType {
   EMAIL
   NUMBER
   SELECT
+  DROPDOWN
+  OPTIONS
   FILE
   DATE
+  PARAGRAPH
 }
 
 Enum UserStatus {
@@ -282,9 +507,15 @@ Enum UserStatus {
   INACTIVE
 }
 
+Ref: InternalRolePermission.roleId > InternalRole.id
+
+Ref: InternalRolePermission.permissionId > Permission.id
+
 Ref: Board.userId > User.id
 
 Ref: Board.committeeId > Committee.id
+
+Ref: User.internalRoleId > InternalRole.id
 
 Ref: User.committeeId - Committee.id
 
@@ -298,7 +529,39 @@ Ref: Attendance.sessionId > Session.id
 
 Ref: Attendance.userId > User.id
 
+Ref: Event.formId - CustomForm.id
+
+Ref: EventSpeaker.eventId > Event.id
+
+Ref: EventSpeaker.speakerId > Speaker.id
+
+Ref: EventSpeaker.photoId > SpeakerPhoto.id
+
+Ref: EventSponsor.eventId > Event.id
+
+Ref: EventSponsor.sponsorId > Sponsor.id
+
+Ref: EventSponsor.photoId > SponsorPhoto.id
+
+Ref: EventPartner.eventId > Event.id
+
+Ref: EventPartner.partnerId > Partner.id
+
+Ref: EventPartner.photoId > PartnerPhoto.id
+
 Ref: EventDay.eventId > Event.id
+
+Ref: FoodMenu.eventId > Event.id
+
+Ref: FoodItem.menuId > FoodMenu.id
+
+Ref: FoodOrder.userId > User.id
+
+Ref: FoodOrder.eventId > Event.id
+
+Ref: FoodOrderItem.orderId > FoodOrder.id
+
+Ref: FoodOrderItem.foodItemId > FoodItem.id
 
 Ref: AgendaItem.eventDayId > EventDay.id
 
@@ -316,12 +579,24 @@ Ref: EventRegistration.eventId > Event.id
 
 Ref: EventRegistration.userId > User.id
 
-Ref: CustomFormField.eventId > Event.id
+Ref: EventRegistration.submissionId - CustomFormSubmission.id
+
+Ref: CustomFormField.formId > CustomForm.id
+
+Ref: CustomFormSubmission.formId > CustomForm.id
+
+Ref: CustomFormSubmission.userId > User.id
 
 Ref: CustomFormResponse.fieldId > CustomFormField.id
 
-Ref: CustomFormResponse.registrationId > EventRegistration.id
+Ref: CustomFormResponse.submissionId > CustomFormSubmission.id
+
+Ref: SpeakerPhoto.speakerId > Speaker.id
 
 Ref: Post.authorId > User.id
+
+Ref: SponsorPhoto.sponsorId > Sponsor.id
+
+Ref: PartnerPhoto.partnerId > Partner.id
 
 Ref: File.committeeId > Committee.id

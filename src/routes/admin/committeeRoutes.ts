@@ -8,13 +8,15 @@ import {
   updateCommittee,
 } from "../../controllers/committeeController";
 import { authorizeRoles } from "../../middlewares/authroizeRoles";
+import { createUploadMiddleware } from "../../middlewares/uploadMiddleware";
 
 const router = Router();
 
 router.use(authorizeRoles("EXCOM"));
+export const uploadImageFile = createUploadMiddleware("temp").single("image");
 
 router.get("/", getCommittees);
-router.post("/", createCommittee);
+router.post("/", uploadImageFile, createCommittee);
 router.patch("/:id", updateCommittee);
 router.delete("/:id", deleteCommittee);
 router.get("/:id", getCommitteeDetails);

@@ -19,7 +19,19 @@ interface CookieOptions {
 }
 
 export type UserWithRelations = Prisma.UserGetPayload<{
-  include: { committee: true; memberProfile: true };
+  include: {
+    committee: true;
+    memberProfile: true;
+    internalRole: {
+      include: {
+        permissions: {
+          include: {
+            permission: true;
+          };
+        };
+      };
+    };
+  };
 }>;
 
 const createAuthToken = (
@@ -53,7 +65,8 @@ const createAuthToken = (
         firstName: user.firstName,
         lastName: user.lastName,
         joinedAt: user?.memberProfile?.joinedAt,
-
+        role: user.role,
+        permissions: user?.internalRole?.permissions.map((p) => p.permission.name),
         committe: user.committee ? user?.committee?.name : "No Committee",
         email: user.email,
         phone: user.phone,
@@ -67,8 +80,9 @@ export const createUser = catchAsync(
     const {
       firstName,
       lastName,
+      personalEmail,
       email,
-      roles,
+      role,
       faculty,
       university,
       joinedAt,
@@ -98,7 +112,6 @@ export const createUser = catchAsync(
             joinedAt,
           },
         },
-        username: email,
         committee: committeId
           ? {
               connect: {
@@ -108,7 +121,8 @@ export const createUser = catchAsync(
           : undefined,
         firstName,
         lastName,
-        roles,
+        personalEmail,
+        role,
         email,
         password: hashedPassword,
         phone,
@@ -133,6 +147,15 @@ export const login = catchAsync(
       include: {
         committee: true,
         memberProfile: true,
+        internalRole: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -164,6 +187,15 @@ export const protect = catchAsync(
       include: {
         committee: true,
         memberProfile: true,
+        internalRole: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -178,11 +210,23 @@ export const protect = catchAsync(
   }
 );
 
+export const logout = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    res.clearCookie("jwt");
+
+    res.status(200).json({
+      status: "success",
+      message: "Logged out successfully",
+    });
+  }
+);
+
 const verifyToken = (token: string, next: NextFunction, res: Response): Promise<any> => {
   return new Promise((resolve, reject) => {
     jwt.verify(token, config["JWT_SECRET"], (err, decoded) => {
       if (err) {
         console.log(err);
+        res.clearCookie("jwt");
         reject(next(new AppError("Invalid token", 401)));
       } else {
         resolve(decoded);
@@ -212,8 +256,9 @@ export const optionalAuth = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const token = req.cookies.jwt;
 
-    if (!token) {
-      next();
+    console.log("WORKING", token);
+    if (!token || token === "undefined") {
+      return next();
     }
 
     const decoded = await verifyToken(token, next, res);
@@ -229,7 +274,7 @@ export const optionalAuth = catchAsync(
     });
 
     if (!user) {
-      next();
+      return next();
     }
 
     req.user = user as UserWithRelations;
