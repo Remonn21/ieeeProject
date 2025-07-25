@@ -2,16 +2,12 @@ import { Router } from "express";
 
 import { createUploadMiddleware } from "../../middlewares/uploadMiddleware";
 import { checkPermission } from "../../middlewares/checkPermission";
-import {
-  addSpeakerPhoto,
-  createSpeaker,
-  getSpeakerData,
-  searchSpeakers,
-} from "../../controllers/speakersController";
+import { addSpeakerPhoto } from "../../controllers/speakersController";
 import {
   addEventSpeaker,
   deleteEventSpeaker,
   getEventSpeakers,
+  updateEventSpeaker,
 } from "../../controllers/Event/SpeakersController";
 
 const router = Router();
@@ -25,7 +21,7 @@ router.get(
   getEventSpeakers
 );
 router.post("/:id/speakers", uploadImageFile, addEventSpeaker);
-router.post("/speakers/:speakerId/newphoto", uploadImageFile, addSpeakerPhoto);
-router.delete("/speakers/:speakerId", deleteEventSpeaker);
+router.patch("/:id/speakers/:speakerId", uploadImageFile, updateEventSpeaker);
+router.delete("/:eventId/speakers/:speakerId", deleteEventSpeaker);
 
 export default router;

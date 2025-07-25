@@ -38,6 +38,10 @@ export const internalPermissions = [
   },
 
   {
+    permission: "member.index",
+    group: "members",
+  },
+  {
     permission: "member.create",
     group: "members",
   },

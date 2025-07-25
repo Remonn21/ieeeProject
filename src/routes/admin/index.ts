@@ -13,13 +13,15 @@ import formRoutes from "./formRoutes";
 import awardRoutes from "./awardRoutes";
 import sponsorRoutes from "./sponsorRoutes";
 import partnerRoutes from "./partnerRoutes";
+import memberRoutes from "./memberRoutes";
 import { optionalAuth, protect } from "../../controllers/authController";
 
 const router = Router();
 
 // router.use(optionalAuth);
-router.use(protect); //TODO:BACK IT LATER
-router.use("/users", userRoutes);
+router.use(protect);
+router.use("/users", userRoutes); //TODO:remove the create from here
+router.use("/members", memberRoutes);
 router.use("/committees", CommitteeRoutes);
 router.use("/sessions", sessionRoutes);
 router.use("/events", eventRoutes);

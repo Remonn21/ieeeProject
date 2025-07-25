@@ -1,0 +1,254 @@
+import { NextFunction, Request, Response } from "express";
+import { prisma } from "../lib/prisma";
+import catchAsync from "../utils/catchAsync";
+import AppError from "../utils/appError";
+import bcrypt from "bcryptjs";
+
+export const getMembers = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { search, paginated } = req.query;
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 1;
+    const skip = (page - 1) * limit;
+
+    const filters: any = {
+      role: {
+        not: "ATTENDEE",
+      },
+    };
+
+    if (search) {
+      filters.OR = [
+        {
+          name: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          committee: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
+
+    const [members, total] = await Promise.all([
+      prisma.user.findMany({
+        where: filters,
+        ...(paginated === "true" && { skip, take: limit }),
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+      prisma.user.count({
+        where: filters,
+      }),
+    ]);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        ...(paginated === "true" && { total }),
+        ...(paginated === "true" && { page }),
+        ...(paginated === "true" && { pages: Math.ceil(total / limit) }),
+        members,
+      },
+    });
+  }
+);
+
+export const getMemberDetails = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    const member = await prisma.user.findUnique({
+      where: {
+        id: id,
+      },
+      include: {
+        committee: true,
+        memberProfile: true,
+        headOf: true,
+      },
+    });
+
+    if (!member) {
+      return next(new AppError("Member not found", 404));
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        member,
+      },
+    });
+  }
+);
+
+export const createMember = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const {
+      firstName,
+      lastName = "",
+      email,
+      personalEmail,
+      password,
+      phone,
+      role,
+      nationalId,
+      university,
+      faculty,
+      ieeeId,
+      committeeId,
+    } = req.body;
+
+    const allowedRoles = ["MEMBER", "EXCOM", "HEAD"];
+    if (!allowedRoles.includes(role)) {
+      return next(new AppError("Invalid role. Allowed roles: MEMBER, EXCOM, HEAD", 400));
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing && existing.role !== "ATTENDEE") {
+      return next(new AppError("Email already in use", 400));
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const [user] = await prisma.$transaction([
+      prisma.user.create({
+        data: {
+          firstName,
+          lastName,
+          email,
+          personalEmail,
+          password: hashedPassword,
+          phone,
+          role,
+          nationalId,
+          committeeId,
+        },
+      }),
+    ]);
+
+    await prisma.memberProfile.create({
+      data: {
+        userId: user.id,
+        university,
+        faculty,
+        ieeeId,
+      },
+    });
+
+    res.status(201).json({
+      status: "success",
+      data: {
+        userId: user.id,
+        message: "Member created successfully",
+      },
+    });
+  }
+);
+
+export const updateMember = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const {
+      firstName,
+      lastName,
+      email,
+      personalEmail,
+      phone,
+      role,
+      nationalId,
+      university,
+      faculty,
+      ieeeId,
+      committeeId,
+    } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { memberProfile: true },
+    });
+
+    if (!user) return next(new AppError("Member not found", 404));
+
+    const allowedRoles = ["MEMBER", "EXCOM", "HEAD"];
+    if (role && !allowedRoles.includes(role)) {
+      return next(new AppError("Invalid role", 400));
+    }
+
+    await prisma.user.update({
+      where: { id },
+      data: {
+        firstName,
+        lastName,
+        email,
+        personalEmail,
+        phone,
+        role,
+        nationalId,
+        committeeId,
+      },
+    });
+
+    if (user.memberProfile) {
+      await prisma.memberProfile.update({
+        where: { userId: id },
+        data: {
+          university,
+          faculty,
+          ieeeId,
+        },
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Member updated successfully",
+    });
+  }
+);
+
+export const toggleMemberStatus = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({ where: { id } });
+
+    if (!user) return next(new AppError("Member not found", 404));
+
+    const newStatus = user.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+
+    await prisma.user.update({
+      where: { id },
+      data: { status: newStatus },
+    });
+
+    res.status(200).json({
+      status: "success",
+      message: `Member status changed to ${newStatus}`,
+    });
+  }
+);
+
+export const deleteMember = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({ where: { id } });
+
+    if (!user) return next(new AppError("Member not found", 404));
+
+    await prisma.memberProfile.deleteMany({ where: { userId: id } });
+    await prisma.user.delete({ where: { id } });
+
+    res.status(204).json({
+      status: "success",
+      message: "Member deleted",
+    });
+  }
+);

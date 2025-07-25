@@ -6,7 +6,6 @@ const router = Router();
 
 router.get("/auth/check", protect, checkAuth);
 router.post("/login", login);
-router.post("/create", createUser);
 
 // app.use("/users", userRoutes);
 // app.use("/company", companyRoutes);

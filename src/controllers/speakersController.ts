@@ -13,6 +13,14 @@ export const createSpeaker = catchAsync(
       return next(new AppError("Photo is required", 400));
     }
 
+    const existingSpeaker = await prisma.speaker.findUnique({
+      where: { name },
+    });
+
+    if (existingSpeaker) {
+      return next(new AppError("Speaker already exists", 400));
+    }
+
     const socialLinksArray = socialLinks?.map((link: any) => {
       if (!link.url || !link.name || !link.icon) {
         return next(new AppError("Missing fields in social links", 400));
