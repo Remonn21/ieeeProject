@@ -261,8 +261,6 @@ model EventDay {
   event   Event    @relation(fields: [eventId], references: [id])
   eventId String
 
-  // foodMenu FoodMenu?
-
   agendaItems AgendaItem[]
 }
 
@@ -329,7 +327,7 @@ model AgendaItem {
   startTime   DateTime
   endTime     DateTime?
 
-  eventDay   EventDay @relation(fields: [eventDayId], references: [id])
+  eventDay   EventDay @relation(fields: [eventDayId], references: [id], onDelete: Cascade)
   eventDayId String
 
   speaker   Speaker @relation(fields: [speakerId], references: [id])

@@ -49,13 +49,13 @@ const formFieldSchema = z.object({
 const agendaItemSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
-  startTime: z.string().datetime(),
-  endTime: z.string().datetime().optional(),
+  startTime: z.coerce.date(),
+  endTime: z.coerce.date().optional(),
   speakerName: z.string().min(1),
 });
 
 const timelineDaySchema = z.object({
-  date: z.string().datetime(),
+  date: z.coerce.date(),
   label: z.string().optional(),
   agenda: z.array(agendaItemSchema),
 });
@@ -63,10 +63,10 @@ const timelineDaySchema = z.object({
 export const createEventSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
-  registrationStart: z.string().datetime(),
-  registrationEnd: z.string().datetime(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  registrationStart: z.coerce.date(),
+  registrationEnd: z.coerce.date(),
   location: z.string().optional(),
   category: z.enum(["event", "outing", "bootcamp", "workshop"]),
   // speakers: z.array(speakerSchema).optional().default([]),

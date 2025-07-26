@@ -565,7 +565,7 @@ Ref: FoodOrderItem.orderId > FoodOrder.id
 
 Ref: FoodOrderItem.foodItemId > FoodItem.id
 
-Ref: AgendaItem.eventDayId > EventDay.id
+Ref: AgendaItem.eventDayId > EventDay.id [delete: Cascade]
 
 Ref: AgendaItem.speakerId > Speaker.id
 

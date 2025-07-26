@@ -3,6 +3,42 @@ import { NextFunction, Request, Response } from "express";
 import AppError from "../../utils/appError";
 import { prisma } from "../../lib/prisma";
 
+export const getEventTimeline = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    if (!id) {
+      return next(new AppError("Event ID is required", 400));
+    }
+
+    const timeline = await prisma.eventDay.findMany({
+      where: { eventId: id },
+      include: {
+        agendaItems: {
+          include: {
+            speaker: {
+              include: {
+                images: {
+                  select: {
+                    id: true,
+                    url: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!timeline) {
+      return next(new AppError("Event not found or event doesn't have a timeline", 404));
+    }
+
+    res.status(200).json({ status: "success", data: { timeline } });
+  }
+);
+
 export const updateEventTimeline = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
@@ -18,7 +54,14 @@ export const updateEventTimeline = catchAsync(
       return next(new AppError("Event not found", 404));
     }
 
-    await prisma.eventDay.deleteMany({ where: { eventId: id } });
+    await prisma.event.update({
+      where: { id },
+      data: {
+        eventDays: {
+          deleteMany: {},
+        },
+      },
+    });
 
     const speakerIds = timeline.flatMap((day: any) =>
       day.agenda.map((item: any) => item.speakerId)

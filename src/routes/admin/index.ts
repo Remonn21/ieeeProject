@@ -3,7 +3,7 @@ import { Router } from "express";
 import userRoutes from "./userRoutes";
 import CommitteeRoutes from "./committeeRoutes";
 import sessionRoutes from "./sessionRoutes";
-import eventRoutes from "./eventRoutes";
+import eventRoutes from "./eventRoutes/eventRoutes";
 import postRoutes from "./postRoutes";
 import boardRoutes from "./boardRoutes";
 import faqRoutes from "./faqRoutes";
