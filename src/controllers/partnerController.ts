@@ -32,7 +32,7 @@ export const createPartner = catchAsync(
     await prisma.partner.update({
       where: { id: partner.id },
       data: {
-        photos: {
+        images: {
           create: {
             url: photoUrl[0],
           },
@@ -73,7 +73,7 @@ export const addPartnerPhoto = catchAsync(
     const updatedPartner = await prisma.partner.update({
       where: { id: id },
       data: {
-        photos: {
+        images: {
           create: {
             url: photoUrl[0],
           },
@@ -106,7 +106,7 @@ export const searchPartners = catchAsync(
       prisma.partner.findMany({
         where: filters,
         include: {
-          photos: {
+          images: {
             select: {
               id: true,
               url: true,
@@ -143,7 +143,7 @@ export const getPartnerData = catchAsync(
     const partner = await prisma.partner.findUnique({
       where: { id: partnerId },
       include: {
-        photos: {
+        images: {
           select: {
             url: true,
             id: true,

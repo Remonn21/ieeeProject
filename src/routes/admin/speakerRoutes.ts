@@ -14,6 +14,7 @@ import {
   createSpeaker,
   getSpeakerData,
   searchSpeakers,
+  updateSpeaker,
 } from "../../controllers/speakersController";
 
 const router = Router();
@@ -28,6 +29,7 @@ router.get(
 );
 router.post("/", uploadImageFile, createSpeaker);
 router.post("/:id/newphoto", uploadImageFile, addSpeakerPhoto);
+router.patch("/:id", uploadImageFile, updateSpeaker);
 // router.delete("/:id", );
 router.get("/:id", getSpeakerData);
 

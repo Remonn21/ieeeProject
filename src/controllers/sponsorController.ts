@@ -32,7 +32,7 @@ export const createSponsor = catchAsync(
     await prisma.sponsor.update({
       where: { id: sponsor.id },
       data: {
-        photos: {
+        images: {
           create: {
             url: photoUrl[0],
           },
@@ -74,7 +74,7 @@ export const addSponsorPhoto = catchAsync(
     const updatedSponsor = await prisma.sponsor.update({
       where: { id: id },
       data: {
-        photos: {
+        images: {
           create: {
             url: photoUrl[0],
           },
@@ -107,7 +107,7 @@ export const searchSponsors = catchAsync(
       prisma.sponsor.findMany({
         where: filters,
         include: {
-          photos: {
+          images: {
             select: {
               id: true,
               url: true,
@@ -144,7 +144,7 @@ export const getSponsorData = catchAsync(
     const sponsor = await prisma.sponsor.findUnique({
       where: { id: sponsorId },
       include: {
-        photos: {
+        images: {
           select: {
             url: true,
             id: true,

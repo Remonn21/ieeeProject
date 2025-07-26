@@ -142,8 +142,8 @@ Table Event {
   registrations EventRegistration [not null]
   form CustomForm
   formId String [unique]
-  images String[] [not null]
-  videos String[] [not null]
+  coverImage String [not null]
+  gallery EventMedia [not null]
   speakers EventSpeaker [not null]
   sponsors EventSponsor [not null]
   partners EventPartner [not null]
@@ -151,6 +151,14 @@ Table Event {
   attenandances EventAttendance [not null]
   foodMenus FoodMenu [not null]
   foodOrders FoodOrder [not null]
+}
+
+Table EventMedia {
+  id String [pk]
+  event Event [not null]
+  type MediaType [not null]
+  eventId String [not null]
+  url String [not null]
 }
 
 Table EventSpeaker {
@@ -229,6 +237,7 @@ Table FoodOrder {
   userId String [not null]
   event Event [not null]
   eventId String [not null]
+  comment String
   status OrderStatus [not null, default: 'pending']
   createdAt DateTime [default: `now()`, not null]
   items FoodOrderItem [not null]
@@ -386,7 +395,7 @@ Table Awards {
 Table Sponsor {
   id String [pk]
   name String [not null]
-  photos SponsorPhoto [not null]
+  images SponsorPhoto [not null]
   eventsSponsored EventSponsor [not null]
   isSeasonSponsor Boolean [not null]
 }
@@ -402,7 +411,7 @@ Table SponsorPhoto {
 Table Partner {
   id String [pk]
   name String [not null]
-  photos PartnerPhoto [not null]
+  images PartnerPhoto [not null]
   events EventPartner [not null]
   isSeasonPartner Boolean [not null]
 }
@@ -456,6 +465,12 @@ Enum AttendanceStatus {
   ABSENT
   PRESENT
   LATE
+}
+
+Enum MediaType {
+  GIF
+  IMAGE
+  VIDEO
 }
 
 Enum OrderStatus {
@@ -532,6 +547,8 @@ Ref: Attendance.sessionId > Session.id
 Ref: Attendance.userId > User.id
 
 Ref: Event.formId - CustomForm.id
+
+Ref: EventMedia.eventId > Event.id
 
 Ref: EventSpeaker.eventId > Event.id
 

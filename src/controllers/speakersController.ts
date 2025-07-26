@@ -73,6 +73,63 @@ export const createSpeaker = catchAsync(
   }
 );
 
+export const updateSpeaker = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const { name, title, job, company, socialLinks, bio } = req.body;
+
+    const speaker = await prisma.speaker.findUnique({
+      where: { id },
+    });
+
+    if (!speaker) {
+      return next(new AppError("Speaker not found", 404));
+    }
+
+    const socialLinksArray = socialLinks?.map((link: any) => {
+      if (!link.url || !link.name || !link.icon) {
+        return next(new AppError("Missing fields in social links", 400));
+      }
+
+      return {
+        name: link.name,
+        icon: link.icon,
+        url: link.url,
+      };
+    });
+
+    const updatedSpeaker = await prisma.speaker.update({
+      where: { id },
+      data: {
+        name,
+        title,
+        job,
+        company,
+
+        socialLinks: {
+          create: socialLinksArray,
+        },
+        bio,
+      },
+      include: {
+        images: {
+          select: {
+            id: true,
+            url: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        speaker: updatedSpeaker,
+      },
+    });
+  }
+);
+
 export const addSpeakerPhoto = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
@@ -177,7 +234,19 @@ export const getSpeakerData = catchAsync(
 
     const speaker = await prisma.speaker.findUnique({
       where: { id: speakerId },
+
       include: {
+        eventsUsedIn: {
+          include: {
+            event: {
+              select: {
+                name: true,
+                id: true,
+                startDate: true,
+              },
+            },
+          },
+        },
         images: {
           select: {
             url: true,

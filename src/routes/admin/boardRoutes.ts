@@ -4,6 +4,7 @@ import { authorizeRoles } from "../../middlewares/authroizeRoles";
 import {
   createBoardMember,
   deleteBoardMember,
+  getBoard,
   updateBoardMember,
 } from "../../controllers/boardController";
 import { createUploadMiddleware } from "../../middlewares/uploadMiddleware";
@@ -19,6 +20,7 @@ router.use(authorizeRoles("EXCOM"));
 
 const uploadImage = createUploadMiddleware("temp").single("image");
 
+router.get("/", getBoard);
 router.post("/", uploadImage, validate(createBoardMemberSchema), createBoardMember);
 router.patch("/:id", uploadImage, validate(updateBoardMemberSchema), updateBoardMember);
 router.delete("/:id", deleteBoardMember);

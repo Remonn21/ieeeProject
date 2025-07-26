@@ -4,7 +4,6 @@ import { NextFunction, Request, Response } from "express";
 import AppError from "../../utils/appError";
 import { prisma } from "../../lib/prisma";
 import { handleNormalUploads } from "../../utils/handleNormalUpload";
-import { Speaker } from "@prisma/client";
 import { InputJsonObject } from "@prisma/client/runtime/library";
 
 export const getEventSpeakers = catchAsync(

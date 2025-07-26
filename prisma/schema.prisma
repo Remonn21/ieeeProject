@@ -203,8 +203,9 @@ model Event {
   form   CustomForm? @relation(fields: [formId], references: [id])
   formId String?     @unique
 
-  images String[]
-  videos String[]
+  coverImage String
+  gallery    EventMedia[]
+  // videos String[]
 
   speakers EventSpeaker[]
   sponsors EventSponsor[]
@@ -216,6 +217,22 @@ model Event {
 
   foodMenus  FoodMenu[]
   foodOrders FoodOrder[]
+}
+
+model EventMedia {
+  id    String @id @default(uuid())
+  event Event  @relation(fields: [eventId], references: [id])
+
+  caption String?
+  type    MediaType
+  eventId String
+  url     String
+}
+
+enum MediaType {
+  GIF
+  IMAGE
+  VIDEO
 }
 
 model EventSpeaker {
@@ -295,6 +312,8 @@ model FoodOrder {
 
   event   Event  @relation(fields: [eventId], references: [id])
   eventId String
+
+  comment String?
 
   status OrderStatus @default(pending)
 
@@ -507,7 +526,7 @@ model Awards {
 model Sponsor {
   id              String         @id @default(uuid())
   name            String
-  photos          SponsorPhoto[]
+  images          SponsorPhoto[]
   eventsSponsored EventSponsor[]
 
   isSeasonSponsor Boolean
@@ -526,7 +545,7 @@ model SponsorPhoto {
 model Partner {
   id     String         @id @default(uuid())
   name   String
-  photos PartnerPhoto[]
+  images PartnerPhoto[]
 
   events EventPartner[]
 

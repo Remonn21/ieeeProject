@@ -12,7 +12,7 @@ export const getEvents = catchAsync(
     const { search, paginated } = req.query;
 
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
     const filters: any = {};
@@ -368,7 +368,7 @@ export const createEvent = catchAsync(
         endDate: new Date(startDate),
         registrationStart: new Date(registrationStart),
         registrationEnd: new Date(registrationEnd),
-        images: [eventImage[0]],
+        coverImage: eventImage[0],
         category,
         location,
       },
@@ -390,167 +390,217 @@ export const createEvent = catchAsync(
   }
 );
 
-export const createEventEssentials = catchAsync(
+export const updateEventEssentials = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const { speakers, sponsors, timeline, formFields } = req.body;
-
-    if (!id) {
-      return next(new AppError("Event ID is required", 400));
-    }
+    const {
+      name,
+      description,
+      startDate,
+      category,
+      registrationStart,
+      registrationEnd,
+      location,
+    } = req.body;
 
     const event = await prisma.event.findUnique({
       where: { id },
     });
-
     if (!event) {
       return next(new AppError("Event not found", 404));
     }
 
-    // for form fields:
+    let eventImage: string[] = [];
 
-    const eventFormFields = [
-      ...formFields.map((field: any) => ({
-        ...field,
-        type: field.type.toUpperCase(),
-      })),
-    ];
-
-    if (!eventFormFields.some((inputField) => inputField?.name === "email")) {
-      eventFormFields.push({
-        label: "Email",
-        type: "EMAIL",
-        name: "email",
-        required: true,
+    if (req.file) {
+      eventImage = await handleNormalUploads([req.file], {
+        entityName: `event-${name}`,
+        folderName: "events",
       });
     }
-    if (!eventFormFields.some((inputField) => inputField?.name === "firstName")) {
-      eventFormFields.push({
-        label: "first name",
-        type: "TEXT",
-        name: "firstName",
-        required: true,
-      });
-    }
-    if (!eventFormFields.some((inputField) => inputField?.name === "lastName")) {
-      eventFormFields.push({
-        label: "Last name",
-        type: "TEXT",
-        name: "lastName",
-        required: true,
-      });
-    }
-
-    const speakerIds: string[] = [];
-    const sponsorIds: string[] = [];
-    speakerIds.push(...speakers.map((s: Speaker) => s.id));
-    sponsorIds.push(...sponsors.map((s: Speaker) => s.id));
-
-    const [speakersData, sponsorsData] = await Promise.all([
-      prisma.speaker.findMany({
-        where: {
-          id: { in: speakerIds },
-        },
-        include: {
-          images: {
-            select: {
-              id: true,
-              url: true,
-            },
-          },
-        },
-      }),
-      prisma.sponsor.findMany({
-        where: {
-          id: { in: sponsorIds },
-        },
-        include: {
-          photos: {
-            select: {
-              id: true,
-              url: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    if (speakersData.length !== speakers.length) {
-      return next(new AppError("Some speakers not found", 404));
-    }
-
-    if (sponsorsData.length !== sponsors.length) {
-      return next(new AppError("Some sponsors not found", 404));
-    }
-
-    await prisma.eventSpeaker.createMany({
-      data: speakers.map((speaker: any) => ({
-        eventId: id,
-        speakerId: speaker.id,
-        photoId: speaker.photoId,
-      })),
-    });
-
-    await prisma.eventSponsor.createMany({
-      data: sponsors.map((sponsor: any) => ({
-        eventId: id,
-        sponsorId: sponsor.id,
-        photoId: sponsor.photoId,
-      })),
-    });
-
-    const form = await createCustomForm({
-      name: event.name,
-      type: "EVENT",
-      description: "Event registration form",
-      formFields: eventFormFields,
-      eventId: event.id,
-      startDate: event.registrationStart,
-      endDate: event.registrationEnd,
-    });
 
     await prisma.event.update({
       where: { id },
       data: {
-        form: {
-          connect: {
-            id: form.id,
-          },
-        },
-        eventDays: {
-          create: timeline.map((day: any) => ({
-            date: new Date(day.date),
-            label: day.label,
-            agendaItems: {
-              create: day.agenda.map((item: any) => {
-                const speakerId = speakersData.find(
-                  (speaker) => speaker.id === item.speakerId
-                )?.id;
-                if (!speakerId) {
-                  throw new Error(`Speaker with id: '${item.speakerId}' not found.`);
-                }
-                return {
-                  name: item.name,
-                  description: item.description,
-                  startTime: new Date(item.startTime),
-                  endTime: item.endTime ? new Date(item.endTime) : null,
-                  speaker: {
-                    connect: { id: speakerId },
-                  },
-                };
-              }),
-            },
-          })),
-        },
+        coverImage: eventImage.length > 0 ? eventImage[0] : event.coverImage,
+        name: name || event.name,
+        description: description || event.description,
+        startDate: new Date(startDate) || event.startDate,
+        endDate: new Date(startDate) || event.endDate,
+        registrationStart: new Date(registrationStart) || event.registrationStart,
+        registrationEnd: new Date(registrationEnd) || event.registrationEnd,
+        location: location || event.location,
+        category: category || event.category,
       },
     });
-
     res.status(200).json({
       status: "success",
-      message: "Event essentials created successfully",
+      message: "Event essentials updated successfully",
     });
   }
 );
+
+// export const createEventEssentials = catchAsync(
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     const { id } = req.params;
+//     const { speakers, sponsors, timeline, formFields } = req.body;
+
+//     if (!id) {
+//       return next(new AppError("Event ID is required", 400));
+//     }
+
+//     const event = await prisma.event.findUnique({
+//       where: { id },
+//     });
+
+//     if (!event) {
+//       return next(new AppError("Event not found", 404));
+//     }
+
+//     // for form fields:
+
+//     const eventFormFields = [
+//       ...formFields.map((field: any) => ({
+//         ...field,
+//         type: field.type.toUpperCase(),
+//       })),
+//     ];
+
+//     if (!eventFormFields.some((inputField) => inputField?.name === "email")) {
+//       eventFormFields.push({
+//         label: "Email",
+//         type: "EMAIL",
+//         name: "email",
+//         required: true,
+//       });
+//     }
+//     if (!eventFormFields.some((inputField) => inputField?.name === "firstName")) {
+//       eventFormFields.push({
+//         label: "first name",
+//         type: "TEXT",
+//         name: "firstName",
+//         required: true,
+//       });
+//     }
+//     if (!eventFormFields.some((inputField) => inputField?.name === "lastName")) {
+//       eventFormFields.push({
+//         label: "Last name",
+//         type: "TEXT",
+//         name: "lastName",
+//         required: true,
+//       });
+//     }
+
+//     const speakerIds: string[] = [];
+//     const sponsorIds: string[] = [];
+//     speakerIds.push(...speakers.map((s: Speaker) => s.id));
+//     sponsorIds.push(...sponsors.map((s: Speaker) => s.id));
+
+//     const [speakersData, sponsorsData] = await Promise.all([
+//       prisma.speaker.findMany({
+//         where: {
+//           id: { in: speakerIds },
+//         },
+//         include: {
+//           images: {
+//             select: {
+//               id: true,
+//               url: true,
+//             },
+//           },
+//         },
+//       }),
+//       prisma.sponsor.findMany({
+//         where: {
+//           id: { in: sponsorIds },
+//         },
+//         include: {
+//           images: {
+//             select: {
+//               id: true,
+//               url: true,
+//             },
+//           },
+//         },
+//       }),
+//     ]);
+
+//     if (speakersData.length !== speakers.length) {
+//       return next(new AppError("Some speakers not found", 404));
+//     }
+
+//     if (sponsorsData.length !== sponsors.length) {
+//       return next(new AppError("Some sponsors not found", 404));
+//     }
+
+//     await prisma.eventSpeaker.createMany({
+//       data: speakers.map((speaker: any) => ({
+//         eventId: id,
+//         speakerId: speaker.id,
+//         photoId: speaker.photoId,
+//       })),
+//     });
+
+//     await prisma.eventSponsor.createMany({
+//       data: sponsors.map((sponsor: any) => ({
+//         eventId: id,
+//         sponsorId: sponsor.id,
+//         photoId: sponsor.photoId,
+//       })),
+//     });
+
+//     const form = await createCustomForm({
+//       name: event.name,
+//       type: "EVENT",
+//       description: "Event registration form",
+//       formFields: eventFormFields,
+//       eventId: event.id,
+//       startDate: event.registrationStart,
+//       endDate: event.registrationEnd,
+//     });
+
+//     await prisma.event.update({
+//       where: { id },
+//       data: {
+//         form: {
+//           connect: {
+//             id: form.id,
+//           },
+//         },
+//         eventDays: {
+//           create: timeline.map((day: any) => ({
+//             date: new Date(day.date),
+//             label: day.label,
+//             agendaItems: {
+//               create: day.agenda.map((item: any) => {
+//                 const speakerId = speakersData.find(
+//                   (speaker) => speaker.id === item.speakerId
+//                 )?.id;
+//                 if (!speakerId) {
+//                   throw new Error(`Speaker with id: '${item.speakerId}' not found.`);
+//                 }
+//                 return {
+//                   name: item.name,
+//                   description: item.description,
+//                   startTime: new Date(item.startTime),
+//                   endTime: item.endTime ? new Date(item.endTime) : null,
+//                   speaker: {
+//                     connect: { id: speakerId },
+//                   },
+//                 };
+//               }),
+//             },
+//           })),
+//         },
+//       },
+//     });
+
+//     res.status(200).json({
+//       status: "success",
+//       message: "Event essentials created successfully",
+//     });
+//   }
+// );
 
 export const deleteEvent = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {

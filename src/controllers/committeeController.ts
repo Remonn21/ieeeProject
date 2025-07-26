@@ -118,6 +118,13 @@ export const getCommittees = catchAsync(
       prisma.committee.findMany({
         include: {
           head: true,
+          // members: {
+          //   select: {
+          //     firstName: true,
+          //     lastName: true,
+          //     status: true,
+          //   },
+          // },
         },
       }),
       prisma.committee.count(),

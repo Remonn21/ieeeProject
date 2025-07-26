@@ -4,7 +4,7 @@ import { Request } from "express";
 import fs from "fs";
 import { randomBytes } from "crypto";
 
-const allowedMimeTypes = [
+export const allowedMimeTypes = [
   "image/jpeg",
   "image/png",
   "image/gif",
@@ -13,9 +13,10 @@ const allowedMimeTypes = [
   "video/quicktime",
   "video/x-msvideo",
   "video/x-matroska",
+  "application/octet-stream",
 ];
 
-const allowedExtensions = [
+export const allowedExtensions = [
   ".jpg",
   ".jpeg",
   ".png",

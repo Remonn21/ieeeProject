@@ -9,7 +9,7 @@ export const getMembers = catchAsync(
     const { search, paginated } = req.query;
 
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
     const filters: any = {
@@ -39,6 +39,14 @@ export const getMembers = catchAsync(
       prisma.user.findMany({
         where: filters,
         ...(paginated === "true" && { skip, take: limit }),
+        include: {
+          committee: {
+            select: {
+              name: true,
+              id: true,
+            },
+          },
+        },
         orderBy: {
           createdAt: "desc",
         },
@@ -48,13 +56,18 @@ export const getMembers = catchAsync(
       }),
     ]);
 
+    const memebrsMapped = members.map((mem) => ({
+      ...mem,
+      committee: mem.committee ? mem.committee.name : null,
+    }));
+
     res.status(200).json({
       status: "success",
       data: {
         ...(paginated === "true" && { total }),
         ...(paginated === "true" && { page }),
         ...(paginated === "true" && { pages: Math.ceil(total / limit) }),
-        members,
+        members: memebrsMapped,
       },
     });
   }

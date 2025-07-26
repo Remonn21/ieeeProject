@@ -5,12 +5,13 @@ import slugify from "slugify";
 export type UploadOptions = {
   folderName: string; // e.g. "projects" or "tasks"
   entityName: string; // e.g. project name or task ID
+  fileData?: boolean;
 };
 
 export const handleNormalUploads = async (
   files: Express.Multer.File[],
   options: UploadOptions
-): Promise<string[]> => {
+): Promise<any[]> => {
   const slugifiedEntityName = slugify(options.entityName);
 
   const basePath = path.join(
@@ -22,7 +23,7 @@ export const handleNormalUploads = async (
 
   await fs.mkdir(basePath, { recursive: true });
 
-  const moveFile = async (file: Express.Multer.File): Promise<string> => {
+  const moveFile = async (file: Express.Multer.File): Promise<any> => {
     const targetPath = path.join(basePath, file.originalname);
     await fs.rename(file.path, targetPath);
 
@@ -30,7 +31,16 @@ export const handleNormalUploads = async (
       .join(options.folderName, slugifiedEntityName, file.originalname)
       .replace(/\\/g, "/");
 
-    return `${process.env.BASE_STATIC_URL}/${relativeUrl}`;
+    if (!options.fileData) {
+      return `${process.env.BASE_STATIC_URL}/${relativeUrl}`;
+    } else {
+      return {
+        url: `${process.env.BASE_STATIC_URL}/${relativeUrl}`,
+        fileName: file.originalname,
+        size: file.size,
+        extName: path.extname(file.originalname).toLowerCase(),
+      };
+    }
   };
 
   const uploadedPaths = await Promise.all(files.map(moveFile));
@@ -41,25 +51,22 @@ export const deleteUploadedFiles = async (
   filenames: string[],
   options: UploadOptions
 ): Promise<void> => {
-  const slugifiedEntityName = slugify(options.entityName);
+  for (const raw of filenames) {
+    let filePath: string;
 
-  const basePath = path.join(
-    process.cwd(),
-    "uploads",
-    options.folderName,
-    slugifiedEntityName
-  );
-
-  for (const filename of filenames) {
-    const filePath = path.join(basePath, filename);
     try {
+      const url = new URL(raw);
+      const pathname = url.pathname;
+
+      const uploadPath = pathname.replace("/static/", "uploads/");
+      filePath = path.join(process.cwd(), uploadPath);
+
       await fs.unlink(filePath);
     } catch (error) {
-      console.warn(`Failed to delete file: ${filePath}`, error);
+      console.warn(`Failed to delete file: ${raw}`, error);
     }
   }
 };
-
 export const deleteUploadFolder = async (options: UploadOptions): Promise<void> => {
   const slugifiedEntityName = slugify(options.entityName);
 

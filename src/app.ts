@@ -50,7 +50,15 @@ app.use(cookieParser());
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 
-app.use("/static", express.static(path.join(__dirname, "../uploads")));
+app.use(
+  "/static",
+  express.static(
+    path.join(
+      __dirname,
+      process.env.NODE_ENV === "development" ? "../uploads" : "./uploads"
+    )
+  )
+);
 console.log("Static folder mapped to:", path.join(__dirname, "../uploads"));
 
 app.use("/api", apiRoutes);

@@ -4,13 +4,16 @@ import { authorizeRoles } from "../../../middlewares/authroizeRoles";
 import {
   attendUser,
   createEvent,
-  createEventEssentials,
   getEventAttendanceStats,
   getEventDetails,
   getEventRegisteredUsers,
   getEvents,
+  updateEventEssentials,
 } from "../../../controllers/eventController";
-import { createEventSchema } from "../../../validations/eventValidation";
+import {
+  createEventSchema,
+  updateEventSchema,
+} from "../../../validations/eventValidation";
 import { validate } from "../../../middlewares/validate";
 import {
   acceptEventRegistration,
@@ -26,11 +29,15 @@ import {
 const router = Router();
 // router.use(authorizeRoles("EXCOM", "Head"));
 import eventSpeakerRoutes from "./eventSpeakerRoutes";
+import eventSponsorRoutes from "./eventSponsorRoutes";
 import eventTimelineRoutes from "./eventTimelineRoutes";
+import eventMediaRoutes from "./eventMediaRoutes";
 import { createUploadMiddleware } from "../../../middlewares/uploadMiddleware";
 
 router.use("/", eventSpeakerRoutes);
+router.use("/", eventSponsorRoutes);
 router.use("/", eventTimelineRoutes);
+router.use("/", eventMediaRoutes);
 
 router.get("/:id/registers", getEventRegisteredUsers);
 router.get("/:eventId/attendees", getEventAttendanceStats);
@@ -52,7 +59,8 @@ const uploadImageFile = createUploadMiddleware("temp").single("image");
 
 router.get("/", getEvents);
 router.post("/", uploadImageFile, validate(createEventSchema), createEvent);
-router.post("/:id/essentials", createEventEssentials);
+router.patch("/:id", uploadImageFile, validate(updateEventSchema), updateEventEssentials);
+// router.post("/:id/essentials", createEventEssentials);
 // router.patch("/:id", updateCommittee);
 // router.delete("/:id", deleteCommittee);
 router.get("/:id", getEventDetails);

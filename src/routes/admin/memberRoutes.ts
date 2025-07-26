@@ -17,8 +17,8 @@ import {
 
 const router = express.Router();
 
-router.get("/", checkPermission("member.index"), getMembers);
-router.get("/:id", checkPermission("member.show"), getMemberDetails);
+router.get("/", getMembers);
+router.get("/:id", getMemberDetails);
 router.get("/:id/toggle-status", checkPermission("member.update"), toggleMemberStatus);
 router.post(
   "/",

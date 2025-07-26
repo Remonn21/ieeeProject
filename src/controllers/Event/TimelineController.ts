@@ -39,10 +39,10 @@ export const getEventTimeline = catchAsync(
   }
 );
 
-export const updateEventTimeline = catchAsync(
+export const addEventDay = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const { timeline } = req.body;
+    const { label, date } = req.body;
 
     if (!id) {
       return next(new AppError("Event ID is required", 400));
@@ -54,56 +54,218 @@ export const updateEventTimeline = catchAsync(
       return next(new AppError("Event not found", 404));
     }
 
-    await prisma.event.update({
-      where: { id },
+    await prisma.eventDay.create({
       data: {
-        eventDays: {
-          deleteMany: {},
+        event: {
+          connect: {
+            id: id,
+          },
         },
+        label,
+        date: new Date(date),
       },
     });
 
-    const speakerIds = timeline.flatMap((day: any) =>
-      day.agenda.map((item: any) => item.speakerId)
-    );
+    res
+      .status(200)
+      .json({ status: "success", data: { message: "Event day added successfully" } });
+  }
+);
 
-    const speakersData = await prisma.speaker.findMany({
-      where: { id: { in: speakerIds } },
-      select: { id: true },
+export const deleteEventDay = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id, dayId } = req.params;
+
+    if (!id) {
+      return next(new AppError("Event ID is required", 400));
+    }
+
+    const [event, eventDay] = await Promise.all([
+      prisma.event.findUnique({ where: { id } }),
+      prisma.eventDay.findUnique({ where: { id: dayId } }),
+    ]);
+
+    if (!event) {
+      return next(new AppError("Event not found", 404));
+    }
+
+    if (!eventDay) {
+      return next(new AppError("Event day not found", 404));
+    }
+
+    await prisma.eventDay.delete({
+      where: {
+        id: dayId,
+      },
     });
 
-    const validSpeakerIds = new Set(speakersData.map((s) => s.id));
+    res
+      .status(200)
+      .json({ status: "success", data: { message: "Event day deleted successfully" } });
+  }
+);
 
-    await prisma.event.update({
-      where: { id },
+export const addEventDaySession = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { eventId, dayId } = req.params;
+    const { name, description, startTime, endTime, speakerId } = req.body;
+
+    if (!eventId || !dayId) {
+      return next(new AppError("Event ID is required", 400));
+    }
+
+    const [event, eventDay, speaker] = await Promise.all([
+      prisma.event.findUnique({ where: { id: eventId } }),
+      prisma.eventDay.findUnique({ where: { id: dayId } }),
+      prisma.speaker.findUnique({ where: { id: speakerId } }),
+    ]);
+
+    if (!event) {
+      return next(new AppError("Event not found", 404));
+    }
+
+    if (!eventDay) {
+      return next(new AppError("Event day not found", 404));
+    }
+
+    if (!speaker) {
+      return next(new AppError("Speaker not found", 404));
+    }
+
+    await prisma.eventDay.update({
+      where: {
+        id: dayId,
+      },
       data: {
-        eventDays: {
-          create: timeline.map((day: any) => ({
-            date: new Date(day.date),
-            label: day.label,
-            agendaItems: {
-              create: day.agenda.map((item: any) => {
-                if (!validSpeakerIds.has(item.speakerId)) {
-                  throw new Error(`Speaker with id '${item.speakerId}' not found.`);
-                }
-
-                return {
-                  name: item.name,
-                  description: item.description,
-                  startTime: new Date(item.startTime),
-                  endTime: item.endTime ? new Date(item.endTime) : null,
-                  speaker: { connect: { id: item.speakerId } },
-                };
-              }),
+        agendaItems: {
+          create: {
+            name,
+            description,
+            startTime: startTime,
+            endTime: endTime,
+            speaker: {
+              connect: {
+                id: speakerId,
+              },
             },
-          })),
+          },
         },
       },
     });
 
     res.status(200).json({
       status: "success",
-      message: "Event timeline updated successfully",
+      data: { message: "Event day session added successfully" },
     });
   }
 );
+
+export const deleteEventDaySession = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { eventId, dayId, sessionId } = req.params;
+
+    if (!eventId || !dayId || !sessionId) {
+      return next(new AppError("Event ID is required", 400));
+    }
+
+    const [event, eventDay] = await Promise.all([
+      prisma.event.findUnique({ where: { id: eventId } }),
+      prisma.eventDay.findUnique({ where: { id: dayId } }),
+    ]);
+
+    if (!event) {
+      return next(new AppError("Event not found", 404));
+    }
+
+    if (!eventDay) {
+      return next(new AppError("Event day not found", 404));
+    }
+
+    await prisma.eventDay.update({
+      where: {
+        id: dayId,
+      },
+      data: {
+        agendaItems: {
+          delete: {
+            id: sessionId,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      status: "success",
+      data: { message: "Event day session deleted successfully" },
+    });
+  }
+);
+
+// export const updateEventTimeline = catchAsync(
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     const { id } = req.params;
+//     const { timeline } = req.body;
+
+//     if (!id) {
+//       return next(new AppError("Event ID is required", 400));
+//     }
+
+//     const event = await prisma.event.findUnique({ where: { id } });
+
+//     if (!event) {
+//       return next(new AppError("Event not found", 404));
+//     }
+
+//     await prisma.event.update({
+//       where: { id },
+//       data: {
+//         eventDays: {
+//           deleteMany: {},
+//         },
+//       },
+//     });
+
+//     const speakerIds = timeline.flatMap((day: any) =>
+//       day.agenda.map((item: any) => item.speakerId)
+//     );
+
+//     const speakersData = await prisma.speaker.findMany({
+//       where: { id: { in: speakerIds } },
+//       select: { id: true },
+//     });
+
+//     const validSpeakerIds = new Set(speakersData.map((s) => s.id));
+
+//     await prisma.event.update({
+//       where: { id },
+//       data: {
+//         eventDays: {
+//           create: timeline.map((day: any) => ({
+//             date: new Date(day.date),
+//             label: day.label,
+//             agendaItems: {
+//               create: day.agenda.map((item: any) => {
+//                 if (!validSpeakerIds.has(item.speakerId)) {
+//                   throw new Error(`Speaker with id '${item.speakerId}' not found.`);
+//                 }
+
+//                 return {
+//                   name: item.name,
+//                   description: item.description,
+//                   startTime: new Date(item.startTime),
+//                   endTime: item.endTime ? new Date(item.endTime) : null,
+//                   speaker: { connect: { id: item.speakerId } },
+//                 };
+//               }),
+//             },
+//           })),
+//         },
+//       },
+//     });
+
+//     res.status(200).json({
+//       status: "success",
+//       message: "Event timeline updated successfully",
+//     });
+//   }
+// );
