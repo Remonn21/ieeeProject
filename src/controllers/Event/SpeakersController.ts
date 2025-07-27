@@ -5,6 +5,7 @@ import AppError from "../../utils/appError";
 import { prisma } from "../../lib/prisma";
 import { handleNormalUploads } from "../../utils/handleNormalUpload";
 import { InputJsonObject } from "@prisma/client/runtime/library";
+import { createSpeakerCore } from "../speakersController";
 
 export const getEventSpeakers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -58,7 +59,7 @@ export const getEventSpeakers = catchAsync(
 export const addEventSpeaker = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const { speakerId, photoId } = req.body;
+    const { speakerId, photoId, name, title, job, company, socialLinks, bio } = req.body;
 
     if (!id) {
       return next(new AppError("Event ID is required", 400));
@@ -72,21 +73,64 @@ export const addEventSpeaker = catchAsync(
       return next(new AppError("Event not found", 404));
     }
 
-    let chosenId = photoId;
+    let newSpeaker;
 
-    if (!photoId) {
+    if (!speakerId) {
       if (!req.file) {
-        return next(new AppError("You must select a old photo or upload new photo", 404));
+        return next(new AppError("speaker image is required", 400));
+      }
+      newSpeaker = await createSpeakerCore({
+        name,
+        title,
+        job,
+        company,
+        socialLinks,
+        bio,
+        file: req.file,
+      });
+    }
+
+    let chosenId = newSpeaker ? newSpeaker.images.at(0)!.id : photoId; //if the speaker is new so choose the added image as the photoId
+    if (speakerId && !newSpeaker) {
+      if (!photoId) {
+        if (!req.file) {
+          return next(
+            new AppError("You must select a old photo or upload new photo", 404)
+          );
+        }
+
+        const photoUrl = (
+          await handleNormalUploads([req.file], {
+            entityName: `speaker-${Date.now()}`,
+            folderName: `speakers/${id}`,
+          })
+        )[0];
+
+        const updatedSpeaker = await prisma.speaker.update({
+          where: {
+            id: speakerId,
+          },
+          include: {
+            images: {
+              select: {
+                id: true,
+                url: true,
+              },
+            },
+          },
+          data: {
+            images: {
+              create: {
+                url: photoUrl,
+                caption: "",
+              },
+            },
+          },
+        });
+        chosenId = updatedSpeaker.images.at(-1)!.id;
       }
 
-      const photoUrl = (
-        await handleNormalUploads([req.file], {
-          entityName: `speaker-${Date.now()}`,
-          folderName: `speakers/${id}`,
-        })
-      )[0];
-
-      const updatedSpeaker = await prisma.speaker.update({
+      const speaker = await prisma.speaker.findUnique({
         where: {
           id: speakerId,
         },
@@ -98,40 +142,17 @@ export const addEventSpeaker = catchAsync(
             },
           },
         },
-        data: {
-          images: {
-            create: {
-              url: photoUrl,
-              caption: "",
-            },
-          },
-        },
       });
-      chosenId = updatedSpeaker.images.at(-1)!.id;
-    }
 
-    const speaker = await prisma.speaker.findUnique({
-      where: {
-        id: speakerId,
-      },
-      include: {
-        images: {
-          select: {
-            id: true,
-            url: true,
-          },
-        },
-      },
-    });
-
-    if (!speaker) {
-      return next(new AppError("Some speakers not found", 404));
+      if (!speaker) {
+        return next(new AppError("Some speakers not found", 404));
+      }
     }
 
     await prisma.eventSpeaker.create({
       data: {
         eventId: id,
-        speakerId: speakerId,
+        speakerId: newSpeaker ? newSpeaker.id : speakerId,
         photoId: chosenId,
       },
     });

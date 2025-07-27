@@ -5,71 +5,105 @@ import AppError from "../utils/appError";
 import { prisma } from "../lib/prisma";
 import { handleNormalUploads } from "../utils/handleNormalUpload";
 
+interface CreateSpeakerOptions {
+  name: string;
+  title: string;
+  job: string;
+  company: string;
+  photoCaption?: string;
+  socialLinks: any[] | string | null;
+  bio: string;
+  file: Express.Multer.File;
+}
+
+export const createSpeakerCore = async (options: CreateSpeakerOptions) => {
+  const { name, title, job, company, photoCaption, socialLinks, bio, file } = options;
+
+  if (!file) throw new AppError("Photo is required", 400);
+
+  let socialLinksValidated: any[] = [];
+
+  if (!Array.isArray(socialLinks)) {
+    try {
+      socialLinksValidated = JSON.parse(socialLinks || "[]");
+    } catch {
+      throw new AppError("Invalid social links", 400);
+    }
+  } else {
+    socialLinksValidated = socialLinks;
+  }
+
+  const existingSpeaker = await prisma.speaker.findUnique({ where: { name } });
+  if (existingSpeaker) throw new AppError("Speaker already exists", 400);
+
+  const socialLinksArray = socialLinksValidated.map((link: any) => {
+    if (!link.url || !link.name || !link.icon) {
+      throw new AppError("Missing fields in social links", 400);
+    }
+
+    return {
+      name: link.name,
+      icon: link.icon,
+      url: link.url,
+    };
+  });
+
+  const speaker = await prisma.speaker.create({
+    data: {
+      name,
+      title,
+      job,
+      company,
+      socialLinks: socialLinksArray,
+      bio,
+    },
+  });
+
+  const photoUrl = await handleNormalUploads([file], {
+    entityName: `speaker-${Date.now()}`,
+    folderName: `speakers/${speaker.id}`,
+  });
+
+  const UpdatedSpeaker = await prisma.speaker.update({
+    where: { id: speaker.id },
+    data: {
+      images: {
+        create: {
+          url: photoUrl[0],
+          caption: photoCaption || "",
+        },
+      },
+    },
+    include: {
+      images: {
+        select: {
+          id: true,
+          url: true,
+        },
+      },
+    },
+  });
+
+  return UpdatedSpeaker;
+};
+
 export const createSpeaker = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { name, title, job, company, photoCaption, socialLinks, bio } = req.body;
 
-    let socialLinksValidated = socialLinks || [];
-
-    if (!Array.isArray(socialLinks)) {
-      try {
-        socialLinksValidated = JSON.parse(socialLinks);
-      } catch {
-        return next(new AppError("Invalid social links", 400));
-      }
-    }
-
     if (!req.file) {
-      return next(new AppError("Photo is required", 400));
+      return next(new AppError("speaker image is required", 400));
     }
 
-    const existingSpeaker = await prisma.speaker.findUnique({
-      where: { name },
-    });
-
-    if (existingSpeaker) {
-      return next(new AppError("Speaker already exists", 400));
-    }
-
-    const socialLinksArray = socialLinksValidated?.map((link: any) => {
-      if (!link.url || !link.name || !link.icon) {
-        return next(new AppError("Missing fields in social links", 400));
-      }
-
-      return {
-        name: link.name,
-        icon: link.icon,
-        url: link.url,
-      };
-    });
-
-    const speaker = await prisma.speaker.create({
-      data: {
-        name,
-        title,
-        job,
-        company,
-
-        socialLinks: socialLinksArray,
-        bio,
-      },
-    });
-
-    const photoUrl = await handleNormalUploads([req.file], {
-      entityName: `speaker-${Date.now()}`,
-      folderName: `speakers/${speaker.id}`,
-    });
-
-    await prisma.speaker.update({
-      where: { id: speaker.id },
-      data: {
-        images: {
-          create: {
-            url: photoUrl[0],
-            caption: photoCaption || "",
-          },
-        },
-      },
+    const speaker = await createSpeakerCore({
+      name,
+      title,
+      job,
+      company,
+      photoCaption,
+      socialLinks,
+      bio,
+      file: req.file,
     });
 
     res.status(201).json({
