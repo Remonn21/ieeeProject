@@ -220,10 +220,20 @@ export const searchSpeakers = catchAsync(
       prisma.speaker.count({ where: filters }),
     ]);
 
+    const speakersMapped = speakers.map((speaker) => {
+      return {
+        ...speaker,
+        socialLinks:
+          typeof speaker.socialLinks === "string"
+            ? JSON.parse(speaker.socialLinks)
+            : speaker.socialLinks,
+      };
+    });
+
     res.status(200).json({
       status: "success",
       data: {
-        speakers,
+        speakers: speakersMapped,
         ...(paginated === "true" && { total }),
         ...(paginated === "true" && { page }),
         ...(paginated === "true" && { pages: Math.ceil(total / limit) }),
