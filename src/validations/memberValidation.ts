@@ -3,8 +3,7 @@ import { z } from "zod";
 const allowedRoles = ["MEMBER", "EXCOM", "HEAD"] as const;
 
 const userFields = {
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().optional(),
+  name: z.string().min(1, "name is required"),
   email: z.string().email("Invalid email"),
   personalEmail: z.string().email("Invalid personal email"),
   password: z.string().min(6, "Password must be at least 6 characters"),

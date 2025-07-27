@@ -52,8 +52,7 @@ Table Board {
 
 Table User {
   id String [pk]
-  firstName String [not null]
-  lastName String [default: '']
+  name String [not null]
   nationalId String
   status UserStatus [not null, default: 'ACTIVE']
   email String [unique, not null]
@@ -156,6 +155,7 @@ Table Event {
 Table EventMedia {
   id String [pk]
   event Event [not null]
+  caption String
   type MediaType [not null]
   eventId String [not null]
   url String [not null]
@@ -214,21 +214,16 @@ Table EventDay {
 
 Table FoodMenu {
   id String [pk]
+  coverImage String [not null]
   name String [not null]
   event Event [not null]
   eventId String [not null]
-  foodItems FoodItem [not null]
-}
+  menuImages String[] [not null]
+  orders FoodOrder [not null]
 
-Table FoodItem {
-  id String [pk]
-  name String [not null]
-  description String
-  price Float [not null]
-  available Boolean [not null, default: true]
-  menu FoodMenu [not null]
-  menuId String [not null]
-  orders FoodOrderItem [not null]
+  indexes {
+    (id, eventId) [unique]
+  }
 }
 
 Table FoodOrder {
@@ -237,19 +232,13 @@ Table FoodOrder {
   userId String [not null]
   event Event [not null]
   eventId String [not null]
+  menu FoodMenu [not null]
+  menuId String [not null]
+  items String [not null]
   comment String
+  price String
   status OrderStatus [not null, default: 'pending']
   createdAt DateTime [default: `now()`, not null]
-  items FoodOrderItem [not null]
-}
-
-Table FoodOrderItem {
-  id String [pk]
-  order FoodOrder [not null]
-  orderId String [not null]
-  foodItem FoodItem [not null]
-  foodItemId String [not null]
-  quantity Int [not null, default: 1]
 }
 
 Table AgendaItem {
@@ -572,15 +561,11 @@ Ref: EventDay.eventId > Event.id
 
 Ref: FoodMenu.eventId > Event.id
 
-Ref: FoodItem.menuId > FoodMenu.id
-
 Ref: FoodOrder.userId > User.id
 
 Ref: FoodOrder.eventId > Event.id
 
-Ref: FoodOrderItem.orderId > FoodOrder.id
-
-Ref: FoodOrderItem.foodItemId > FoodItem.id
+Ref: FoodOrder.menuId > FoodMenu.id
 
 Ref: AgendaItem.eventDayId > EventDay.id [delete: Cascade]
 

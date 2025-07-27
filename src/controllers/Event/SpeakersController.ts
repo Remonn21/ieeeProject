@@ -36,6 +36,10 @@ export const getEventSpeakers = catchAsync(
       ...speaker,
       speaker: {
         ...speaker.speaker,
+        socialLinks:
+          typeof speaker.speaker.socialLinks === "string"
+            ? JSON.parse(speaker.speaker.socialLinks)
+            : speaker.speaker.socialLinks,
         images: speaker.speaker.images.find((image) => image.id === speaker.photoId),
       },
     }));
@@ -146,6 +150,18 @@ export const updateEventSpeaker = catchAsync(
 
     let updatedSpeaker;
 
+    let socialLinksValidated = socialLinks;
+
+    console.log(socialLinks, "socialLinks", socialLinksValidated);
+
+    if (!Array.isArray(socialLinksValidated) && socialLinks !== undefined) {
+      try {
+        socialLinksValidated = JSON.parse(socialLinks);
+      } catch {
+        return next(new AppError("Invalid social links", 400));
+      }
+    }
+
     const eventSpeaker = await prisma.eventSpeaker.findUnique({
       where: { eventId_speakerId: { eventId: id, speakerId: speakerId } },
       include: {
@@ -168,9 +184,9 @@ export const updateEventSpeaker = catchAsync(
 
     if (name || title || job || company || socialLinks || bio) {
       let socialLinksArray = eventSpeaker.speaker.socialLinks;
-      if (socialLinks) {
+      if (socialLinksValidated) {
         socialLinksArray = JSON.stringify(
-          socialLinks?.map((link: any) => {
+          socialLinksValidated?.map((link: any) => {
             if (!link.url || !link.name || !link.icon) {
               return next(new AppError("Missing fields in social links", 400));
             }

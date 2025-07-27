@@ -9,6 +9,16 @@ export const createSpeaker = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { name, title, job, company, photoCaption, socialLinks, bio } = req.body;
 
+    let socialLinksValidated = socialLinks || [];
+
+    if (!Array.isArray(socialLinks)) {
+      try {
+        socialLinksValidated = JSON.parse(socialLinks);
+      } catch {
+        return next(new AppError("Invalid social links", 400));
+      }
+    }
+
     if (!req.file) {
       return next(new AppError("Photo is required", 400));
     }
@@ -21,7 +31,7 @@ export const createSpeaker = catchAsync(
       return next(new AppError("Speaker already exists", 400));
     }
 
-    const socialLinksArray = socialLinks?.map((link: any) => {
+    const socialLinksArray = socialLinksValidated?.map((link: any) => {
       if (!link.url || !link.name || !link.icon) {
         return next(new AppError("Missing fields in social links", 400));
       }
@@ -40,9 +50,7 @@ export const createSpeaker = catchAsync(
         job,
         company,
 
-        socialLinks: {
-          create: socialLinksArray,
-        },
+        socialLinks: socialLinksArray,
         bio,
       },
     });

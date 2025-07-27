@@ -189,7 +189,7 @@ export const attendUser = catchAsync(
         message: "User already checked in",
         user: {
           id: user?.userId,
-          name: user?.user?.firstName + " " + user?.user?.lastName,
+          name: user?.user?.name,
           email: user?.user?.email,
         },
       });
@@ -209,7 +209,7 @@ export const attendUser = catchAsync(
       data: {
         user: {
           id: user.userId,
-          name: user.user.firstName + " " + user.user.lastName,
+          name: user.user.name,
           email: user.user.email,
           phone: user.user.phone,
         },
@@ -248,8 +248,7 @@ export const getEventAttendanceStats = catchAsync(
           user: {
             select: {
               id: true,
-              firstName: true,
-              lastName: true,
+              name: true,
               email: true,
               phone: true,
             },
@@ -264,8 +263,7 @@ export const getEventAttendanceStats = catchAsync(
           user: {
             select: {
               id: true,
-              firstName: true,
-              lastName: true,
+              name: true,
               email: true,
               phone: true,
             },
@@ -313,8 +311,7 @@ export const getEventRegisteredUsers = catchAsync(
             user: {
               select: {
                 email: true,
-                firstName: true,
-                lastName: true,
+                name: true,
                 committee: true,
                 committeeId: true,
                 nationalId: true,

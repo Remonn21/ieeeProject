@@ -31,6 +31,7 @@ const router = Router();
 import eventSpeakerRoutes from "./eventSpeakerRoutes";
 import eventSponsorRoutes from "./eventSponsorRoutes";
 import eventTimelineRoutes from "./eventTimelineRoutes";
+import eventFoodMenuRoutes from "./eventFoodMenuRoutes";
 import eventMediaRoutes from "./eventMediaRoutes";
 import { createUploadMiddleware } from "../../../middlewares/uploadMiddleware";
 
@@ -38,17 +39,13 @@ router.use("/", eventSpeakerRoutes);
 router.use("/", eventSponsorRoutes);
 router.use("/", eventTimelineRoutes);
 router.use("/", eventMediaRoutes);
+router.use("/", eventFoodMenuRoutes);
 
 router.get("/:id/registers", getEventRegisteredUsers);
 router.get("/:eventId/attendees", getEventAttendanceStats);
 router.post("/:eventId/attendees", attendUser);
 router.get("/responses/:responseId", getRegisterResponseDetails);
 router.get("/responses/:responseId/accept-user", acceptEventRegistration);
-
-// food menu
-router.get("/:id/food-menu", getFoodMenusForEvent);
-router.post("/:id/food-menu", createFoodMenu);
-router.patch("/:eventId/food-menu/:menuId", updateFoodMenu);
 
 // food orders
 router.get("/:eventId/food-orders", getEventFoodOrders);

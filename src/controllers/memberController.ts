@@ -104,8 +104,7 @@ export const getMemberDetails = catchAsync(
 export const createMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const {
-      firstName,
-      lastName = "",
+      name,
       email,
       personalEmail,
       password,
@@ -133,8 +132,7 @@ export const createMember = catchAsync(
     const [user] = await prisma.$transaction([
       prisma.user.create({
         data: {
-          firstName,
-          lastName,
+          name,
           email,
           personalEmail,
           password: hashedPassword,
@@ -169,8 +167,7 @@ export const updateMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const {
-      firstName,
-      lastName,
+      name,
       email,
       personalEmail,
       phone,
@@ -197,8 +194,7 @@ export const updateMember = catchAsync(
     await prisma.user.update({
       where: { id },
       data: {
-        firstName,
-        lastName,
+        name,
         email,
         personalEmail,
         phone,

@@ -76,8 +76,7 @@ enum FameRank {
 model User {
   id String @id @default(uuid())
 
-  firstName  String
-  lastName   String? @default("")
+  name       String
   nationalId String?
 
   status UserStatus @default(ACTIVE)
@@ -282,28 +281,31 @@ model EventDay {
 }
 
 model FoodMenu {
-  id      String @id @default(uuid())
-  name    String
-  event   Event  @relation(fields: [eventId], references: [id])
-  eventId String
+  id         String      @id @default(uuid())
+  coverImage String
+  name       String
+  event      Event       @relation(fields: [eventId], references: [id])
+  eventId    String
+  menuImages String[]
   // day        EventDay? @relation(fields: [eventDayId], references: [id])
   // eventDayId String?   @unique
+  orders     FoodOrder[]
 
-  foodItems FoodItem[]
+  @@unique([id, eventId])
 }
 
-model FoodItem {
-  id          String  @id @default(uuid())
-  name        String
-  description String?
-  price       Float
-  available   Boolean @default(true)
+// model FoodItem {
+//   id          String  @id @default(uuid())
+//   name        String
+//   description String?
+//   price       Float
+//   available   Boolean @default(true)
 
-  menu   FoodMenu @relation(fields: [menuId], references: [id])
-  menuId String
+//   menu   FoodMenu @relation(fields: [menuId], references: [id])
+//   menuId String
 
-  orders FoodOrderItem[]
-}
+//   orders FoodOrderItem[]
+// }
 
 model FoodOrder {
   id     String @id @default(uuid())
@@ -313,13 +315,18 @@ model FoodOrder {
   event   Event  @relation(fields: [eventId], references: [id])
   eventId String
 
+  menu   FoodMenu @relation(fields: [menuId], references: [id])
+  menuId String
+
+  items   String //used this way because it will be hard to add all the menu items one by one 
   comment String?
+  price   String?
 
   status OrderStatus @default(pending)
 
   createdAt DateTime @default(now())
 
-  items FoodOrderItem[]
+  // items FoodOrderItem[]
 }
 
 enum OrderStatus {
@@ -328,16 +335,16 @@ enum OrderStatus {
   accepted
 }
 
-model FoodOrderItem {
-  id      String    @id @default(uuid())
-  order   FoodOrder @relation(fields: [orderId], references: [id])
-  orderId String
+// model FoodOrderItem {
+//   id      String    @id @default(uuid())
+//   order   FoodOrder @relation(fields: [orderId], references: [id])
+//   orderId String
 
-  foodItem   FoodItem @relation(fields: [foodItemId], references: [id])
-  foodItemId String
+//   foodItem   FoodItem @relation(fields: [foodItemId], references: [id])
+//   foodItemId String
 
-  quantity Int @default(1)
-}
+//   quantity Int @default(1)
+// }
 
 model AgendaItem {
   id          String    @id @default(uuid())

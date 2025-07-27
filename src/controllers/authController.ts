@@ -62,8 +62,7 @@ const createAuthToken = (
     data: {
       user: {
         id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        name: user.name,
         joinedAt: user?.memberProfile?.joinedAt,
         role: user.role,
         permissions: user?.internalRole?.permissions.map((p) => p.permission.name),
@@ -78,8 +77,7 @@ const createAuthToken = (
 export const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const {
-      firstName,
-      lastName,
+      name,
       personalEmail,
       email,
       role,
@@ -119,8 +117,8 @@ export const createUser = catchAsync(
               },
             }
           : undefined,
-        firstName,
-        lastName,
+        name,
+
         personalEmail,
         role,
         email,
@@ -241,8 +239,7 @@ export const checkAuth = (req: Request, res: Response) => {
     data: {
       user: {
         id: req.user?.id,
-        firstName: req.user?.firstName,
-        lastName: req.user?.lastName,
+        name: req.user?.name,
         joinedIn: req.user?.memberProfile?.joinedAt,
         committee: req.user?.committee ? req.user?.committee?.name : "No Committee",
         email: req.user?.email,

@@ -22,12 +22,8 @@ const generateRandomPassword = (length = 10) => {
   ).join("");
 };
 
-export async function createGeneratedUser(
-  firstName: string,
-  lastName: string,
-  email: string
-): Promise<User> {
-  const baseUsername = firstName.toLowerCase();
+export async function createGeneratedUser(name: string, email: string): Promise<User> {
+  const baseUsername = name.toLowerCase();
   let generatedUsername = "";
   let usernameExists = true;
 
@@ -48,8 +44,7 @@ export async function createGeneratedUser(
 
   const newUser = await prisma.user.create({
     data: {
-      firstName,
-      lastName,
+      name,
       email: `${generatedUsername}@attendee.com`, // System-generated email
       personalEmail: email, // Provided by the user
       phone: "N/A",
@@ -87,8 +82,7 @@ export const getRegisterResponseDetails = catchAsync(
         user: {
           select: {
             email: true,
-            firstName: true,
-            lastName: true,
+            name: true,
             committee: true,
             committeeId: true,
             nationalId: true,
@@ -213,12 +207,10 @@ export const registerToEvent = catchAsync(
 
     console.log(validatedInputs);
 
-    const firstName = validatedInputs.find(
-      (inputField: any) => inputField?.name === "firstName"
+    const name = validatedInputs.find(
+      (inputField: any) => inputField?.name === "name"
     ).value;
-    const lastName = validatedInputs.find(
-      (inputField: any) => inputField?.name === "lastName"
-    ).value;
+
     const email = validatedInputs.find(
       (inputField: any) => inputField?.name === "email"
     ).value;
@@ -234,7 +226,7 @@ export const registerToEvent = catchAsync(
     }
 
     if (!user) {
-      user = await createGeneratedUser(firstName, lastName, email);
+      user = await createGeneratedUser(name, email);
     }
 
     const filteredInputs = validatedInputs.filter((input: any) => input !== undefined);
@@ -325,8 +317,7 @@ export const acceptEventRegistration = catchAsync(
         },
         user: {
           select: {
-            firstName: true,
-            lastName: true,
+            name: true,
             personalEmail: true,
             password: true,
             id: true,
@@ -382,7 +373,7 @@ export const acceptEventRegistration = catchAsync(
     const htmlContent = await parseHtmlTemplate(
       htmlTemplatePath,
       {
-        name: `${response.user?.firstName} ${response.user?.lastName}`,
+        name: `${response.user?.name}`,
         date: format(response.event.startDate, "MMMM d, yyyy"),
         checkInTime: format(response.event.startDate, "H:mm"),
         location: "Banha University Hall",
