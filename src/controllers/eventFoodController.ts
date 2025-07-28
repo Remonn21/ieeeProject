@@ -190,9 +190,9 @@ export const getFoodMenusForEvent = catchAsync(
       where: { eventId },
     });
 
-    // if (menus.length === 0) {
-    //   return next(new AppError("No menu found for this event", 404));
-    // }
+    if (menus.length === 0) {
+      return next(new AppError("No menu found for this event or event not found", 404));
+    }
 
     res.status(200).json({
       status: "success",

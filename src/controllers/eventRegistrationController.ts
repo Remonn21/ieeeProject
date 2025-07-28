@@ -13,6 +13,7 @@ import bcrypt from "bcryptjs";
 import { imageUrlToBase64 } from "../utils/imageUrlToBase64";
 import { parseHtmlTemplate } from "../utils/parseHtmlTemplate";
 import { format } from "date-fns";
+import { getCurrentSeason } from "../lib/season";
 
 const generateRandomPassword = (length = 10) => {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -42,13 +43,32 @@ export async function createGeneratedUser(name: string, email: string): Promise<
   const randomPassword = generateRandomPassword(10);
   const hashedPassword = await bcrypt.hash(randomPassword, 12);
 
-  const newUser = await prisma.user.create({
+  const [newUser, currentSeason] = await Promise.all([
+    prisma.user.create({
+      data: {
+        name,
+        email: `${generatedUsername}@attendee.com`, // System-generated email to let him login
+        personalEmail: email, // Provided by the user
+        phone: "N/A",
+        password: hashedPassword,
+        // role: "ATTENDEE",
+      },
+    }),
+    getCurrentSeason(),
+  ]);
+
+  await prisma.seasonMembership.create({
     data: {
-      name,
-      email: `${generatedUsername}@attendee.com`, // System-generated email
-      personalEmail: email, // Provided by the user
-      phone: "N/A",
-      password: hashedPassword,
+      season: {
+        connect: {
+          id: currentSeason.id,
+        },
+      },
+      user: {
+        connect: {
+          id: newUser.id,
+        },
+      },
       role: "ATTENDEE",
     },
   });

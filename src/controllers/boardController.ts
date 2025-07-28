@@ -5,6 +5,8 @@ import AppError from "../utils/appError";
 import { prisma } from "../lib/prisma";
 import { handleNormalUploads } from "../utils/handleNormalUpload";
 import slugify from "slugify";
+import { getCurrentSeason } from "../lib/season";
+import { isValid as isValidDate, parseISO } from "date-fns";
 // import {
 //   deleteUploadedFiles,
 //   deleteUploadFolder,
@@ -13,35 +15,85 @@ import slugify from "slugify";
 
 export const getBoard = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const board = await prisma.board.findMany();
+    const { season, allSeasons } = req.query;
+    const selectedSeasons: string[] = [];
 
-    // const groupedByPosition = board.reduce(
-    //   (acc, member) => {
-    //     const positionKey = member.position;
+    if (season && typeof season !== "string") {
+      return next(new AppError("season must be a string", 400));
+    }
 
-    //     if (!acc[positionKey]) {
-    //       acc[positionKey] = [];
-    //     }
+    if (season && typeof season === "string") {
+      const parsed = parseISO(season);
 
-    //     acc[positionKey].push(member);
+      if (!isValidDate(parsed)) {
+        return next(new AppError("Invalid date format", 400));
+      }
 
-    //     return acc;
-    //   },
-    //   {} as Record<string, typeof board>
-    // );
+      const selectedSeason = await prisma.season.findFirst({
+        where: {
+          startDate: { lte: parsed },
+          endDate: { gte: parsed },
+        },
+      });
+
+      if (!selectedSeason) {
+        return next(new AppError("Season not found", 404));
+      }
+
+      selectedSeasons.push(selectedSeason.id);
+    }
+
+    if (!season && !allSeasons) {
+      const currentSeason = await getCurrentSeason();
+      selectedSeasons.push(currentSeason.id);
+    }
+
+    if (allSeasons) {
+      const seasons = await prisma.season.findMany({ select: { id: true } });
+      selectedSeasons.push(...seasons.map((s) => s.id));
+    }
+
+    const boards = await prisma.board.findMany({
+      where: {
+        seasonId: { in: selectedSeasons },
+      },
+      include: {
+        user: true,
+        committee: true,
+        season: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    const groupedBySeason: Record<string, typeof boards> = {};
+
+    for (const board of boards) {
+      const seasonName = board.season?.name || "Unknown";
+
+      if (!groupedBySeason[seasonName]) {
+        groupedBySeason[seasonName] = [];
+      }
+
+      groupedBySeason[seasonName].push(board);
+    }
 
     res.status(200).json({
       status: "success",
-      data: { board },
+      data: { boards: groupedBySeason },
     });
   }
 );
 
 export const createBoardMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { position, title, socialLinks, userId, committeeId, name } = req.body;
+    const { position, title, socialLinks, userId, committeeId, name, seasonId } =
+      req.body;
 
-    const [userDoc, committeeDoc] = await Promise.all([
+    const [userDoc, committeeDoc, seasonDoc] = await Promise.all([
       userId
         ? prisma.user.findUnique({
             where: { id: userId },
@@ -52,7 +104,14 @@ export const createBoardMember = catchAsync(
             where: { id: committeeId },
           })
         : null,
+      prisma.season.findUnique({
+        where: { id: seasonId },
+      }),
     ]);
+
+    if (!seasonDoc) {
+      return next(new AppError("season not found", 400));
+    }
 
     const imageFile = req.file as Express.Multer.File;
 
@@ -81,6 +140,11 @@ export const createBoardMember = catchAsync(
 
     const boardMember = await prisma.board.create({
       data: {
+        season: {
+          connect: {
+            id: seasonId,
+          },
+        },
         position,
         title,
         name,

@@ -26,9 +26,11 @@ const socialLinksSchema = z.preprocess(
 
 export const createBoardMemberSchema = z.object({
   position: positionEnum,
+
   title: z.string().min(1, "Title is required"),
   name: z.string().min(1, "Name is required"),
   socialLinks: socialLinksSchema,
+  seasonId: z.string().cuid("Invalid season Id"),
   userId: z.string().uuid("Invalid user ID").optional(),
   committeeId: z.string().uuid("Invalid committee ID").optional(),
 });
@@ -39,5 +41,7 @@ export const updateBoardMemberSchema = z.object({
   name: z.string().min(1, "Name is required").optional(),
   socialLinks: socialLinksSchema.optional(),
   userId: z.string().uuid("Invalid user ID").nullable().optional(),
+  seasonId: z.string().cuid("Invalid season ID").nullable().optional(),
+
   committeeId: z.string().uuid("Invalid committee ID").nullable().optional(),
 });

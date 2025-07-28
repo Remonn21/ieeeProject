@@ -2,6 +2,61 @@
 //// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 //// ------------------------------------------------------
 
+Table Season {
+  id String [pk]
+  name String [not null]
+  startDate DateTime [not null]
+  endDate DateTime [not null]
+  board Board [not null]
+  seasonMemberships SeasonMembership [not null]
+}
+
+Table SeasonMembership {
+  id String [pk]
+  user User [not null]
+  userId String [not null]
+  season Season [not null]
+  seasonId String [not null]
+  isBoardMember Boolean [not null, default: false]
+  joinedAt DateTime [default: `now()`, not null]
+  role Role [not null, default: 'MEMBER']
+  exitedAt DateTime
+  exitReason String
+
+  indexes {
+    (userId, seasonId) [unique]
+  }
+}
+
+Table User {
+  id String [pk]
+  name String [not null]
+  nationalId String
+  status UserStatus [not null, default: 'ACTIVE']
+  email String [unique, not null]
+  personalEmail String [not null]
+  password String [not null]
+  phone String [not null]
+  university String
+  faculty String
+  ieeeId String
+  formSubmissions CustomFormSubmission [not null]
+  internalRole InternalRole
+  internalRoleId String
+  committee Committee
+  committeeId String
+  seasonMemberships SeasonMembership [not null]
+  eventsAttendance EventAttendance [not null]
+  eventsSesssionAttendance EventSessionAttendance [not null]
+  attendances Attendance [not null]
+  EventRegistration EventRegistration [not null]
+  foodOrders FoodOrder [not null]
+  boards Board [not null]
+  posts Post [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
 Table InternalRole {
   id String [pk]
   name String [unique, not null]
@@ -48,56 +103,18 @@ Table Board {
   userId String
   committee Committee
   committeeId String
-}
-
-Table User {
-  id String [pk]
-  name String [not null]
-  nationalId String
-  status UserStatus [not null, default: 'ACTIVE']
-  email String [unique, not null]
-  personalEmail String [not null]
-  password String [not null]
-  phone String [not null]
-  role Role [not null, default: 'ATTENDEE']
-  formSubmissions CustomFormSubmission [not null]
-  internalRole InternalRole
-  internalRoleId String
-  committee Committee
-  committeeId String
-  headOf Committee [not null]
-  memberProfile MemberProfile
-  eventsAttendance EventAttendance [not null]
-  eventsSesssionAttendance EventSessionAttendance [not null]
-  attendances Attendance [not null]
-  EventRegistration EventRegistration [not null]
-  foodOrders FoodOrder [not null]
-  boards Board [not null]
-  posts Post [not null]
-  createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime
-}
-
-Table MemberProfile {
-  id String [pk]
-  user User [not null]
-  userId String [unique, not null]
-  university String [not null]
-  faculty String [not null]
-  ieeeId String
-  joinedAt DateTime [default: `now()`, not null]
+  season Season [not null]
+  seasonId String [not null]
 }
 
 Table Committee {
   id String [pk]
   name String [not null]
   description String
-  head User [not null]
-  headId String [not null]
+  leaders Board [not null]
   topics Json
   sessions Session [not null]
   members User [not null]
-  boards Board [not null]
   files File [not null]
 }
 
@@ -518,6 +535,14 @@ Enum UserStatus {
   INACTIVE
 }
 
+Ref: SeasonMembership.userId > User.id
+
+Ref: SeasonMembership.seasonId > Season.id
+
+Ref: User.internalRoleId > InternalRole.id
+
+Ref: User.committeeId > Committee.id
+
 Ref: InternalRolePermission.roleId > InternalRole.id
 
 Ref: InternalRolePermission.permissionId > Permission.id
@@ -526,13 +551,7 @@ Ref: Board.userId > User.id
 
 Ref: Board.committeeId > Committee.id
 
-Ref: User.internalRoleId > InternalRole.id
-
-Ref: User.committeeId - Committee.id
-
-Ref: MemberProfile.userId - User.id
-
-Ref: Committee.headId - User.id
+Ref: Board.seasonId > Season.id
 
 Ref: Session.committeeId > Committee.id
 

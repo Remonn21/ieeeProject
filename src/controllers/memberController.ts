@@ -3,6 +3,8 @@ import { prisma } from "../lib/prisma";
 import catchAsync from "../utils/catchAsync";
 import AppError from "../utils/appError";
 import bcrypt from "bcryptjs";
+import { createUserService } from "../services/userService";
+import { getCurrentSeason } from "../lib/season";
 
 export const getMembers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -83,8 +85,17 @@ export const getMemberDetails = catchAsync(
       },
       include: {
         committee: true,
-        memberProfile: true,
-        headOf: true,
+        seasonMemberships: true,
+        boards: {
+          include: {
+            season: true,
+            committee: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -123,34 +134,25 @@ export const createMember = catchAsync(
     }
 
     const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing && existing.role !== "ATTENDEE") {
+    //TODO:fix if he exists as attende so update him and add new memberShip record for current season as member and update his data only
+    if (existing) {
       return next(new AppError("Email already in use", 400));
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const [user] = await prisma.$transaction([
-      prisma.user.create({
-        data: {
-          name,
-          email,
-          personalEmail,
-          password: hashedPassword,
-          phone,
-          role,
-          nationalId,
-          committeeId,
-        },
-      }),
-    ]);
-
-    await prisma.memberProfile.create({
-      data: {
-        userId: user.id,
-        university,
-        faculty,
-        ieeeId,
-      },
+    const user = await createUserService({
+      name,
+      email,
+      personalEmail,
+      password,
+      phone,
+      role,
+      nationalId,
+      university,
+      faculty,
+      ieeeId,
+      committeeId,
     });
 
     res.status(201).json({
@@ -181,15 +183,16 @@ export const updateMember = catchAsync(
 
     const user = await prisma.user.findUnique({
       where: { id },
-      include: { memberProfile: true },
     });
 
     if (!user) return next(new AppError("Member not found", 404));
 
-    const allowedRoles = ["MEMBER", "EXCOM", "HEAD"];
+    const allowedRoles = ["MEMBER", "EXCOM", "HEAD", "ATTENDEE"];
     if (role && !allowedRoles.includes(role)) {
       return next(new AppError("Invalid role", 400));
     }
+
+    const currentSeason = await getCurrentSeason();
 
     await prisma.user.update({
       where: { id },
@@ -198,19 +201,25 @@ export const updateMember = catchAsync(
         email,
         personalEmail,
         phone,
-        role,
+
+        university,
+        faculty,
+        ieeeId,
         nationalId,
         committeeId,
       },
     });
 
-    if (user.memberProfile) {
-      await prisma.memberProfile.update({
-        where: { userId: id },
+    if (role) {
+      await prisma.seasonMembership.update({
+        where: {
+          userId_seasonId: {
+            seasonId: currentSeason.id,
+            userId: user.id,
+          },
+        },
         data: {
-          university,
-          faculty,
-          ieeeId,
+          role,
         },
       });
     }
@@ -252,7 +261,7 @@ export const deleteMember = catchAsync(
 
     if (!user) return next(new AppError("Member not found", 404));
 
-    await prisma.memberProfile.deleteMany({ where: { userId: id } });
+    await prisma.seasonMembership.deleteMany({ where: { userId: id } });
     await prisma.user.delete({ where: { id } });
 
     res.status(204).json({

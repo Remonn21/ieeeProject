@@ -8,6 +8,8 @@ import catchAsync from "../utils/catchAsync";
 
 import { prisma } from "../lib/prisma";
 import config from "../config";
+import { createUserService } from "../services/userService";
+import { getCurrentSeason } from "../lib/season";
 
 interface CookieOptions {
   expires: Date;
@@ -21,7 +23,7 @@ interface CookieOptions {
 export type UserWithRelations = Prisma.UserGetPayload<{
   include: {
     committee: true;
-    memberProfile: true;
+    seasonMemberships: true;
     internalRole: {
       include: {
         permissions: {
@@ -63,8 +65,8 @@ const createAuthToken = (
       user: {
         id: user.id,
         name: user.name,
-        joinedAt: user?.memberProfile?.joinedAt,
-        role: user.role,
+        joinedAt: user?.seasonMemberships?.at(-1)?.joinedAt,
+        role: user?.seasonMemberships?.at(-1)?.role,
         permissions: user?.internalRole?.permissions.map((p) => p.permission.name),
         committe: user.committee ? user?.committee?.name : "No Committee",
         email: user.email,
@@ -86,45 +88,20 @@ export const createUser = catchAsync(
       joinedAt,
       password,
       phone,
-      committeId,
+      committeeId,
     } = req.body;
 
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        email,
-      },
-    });
-
-    if (existingUser) {
-      return next(new AppError("User with these credentials already exists.", 400));
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    const newUser = await prisma.user.create({
-      data: {
-        memberProfile: {
-          create: {
-            faculty,
-            university,
-            joinedAt,
-          },
-        },
-        committee: committeId
-          ? {
-              connect: {
-                id: committeId,
-              },
-            }
-          : undefined,
-        name,
-
-        personalEmail,
-        role,
-        email,
-        password: hashedPassword,
-        phone,
-      },
+    const newUser = await createUserService({
+      name,
+      personalEmail,
+      email,
+      role,
+      faculty,
+      university,
+      joinedAt,
+      password,
+      phone,
+      committeeId,
     });
 
     createAuthToken(newUser, 201, res);
@@ -144,7 +121,6 @@ export const login = catchAsync(
       where: { email },
       include: {
         committee: true,
-        memberProfile: true,
         internalRole: {
           include: {
             permissions: {
@@ -180,11 +156,17 @@ export const protect = catchAsync(
 
     const userId = decoded.id;
 
+    const season = await getCurrentSeason();
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         committee: true,
-        memberProfile: true,
+        seasonMemberships: {
+          where: {
+            seasonId: season.id,
+          },
+        },
         internalRole: {
           include: {
             permissions: {
@@ -240,7 +222,8 @@ export const checkAuth = (req: Request, res: Response) => {
       user: {
         id: req.user?.id,
         name: req.user?.name,
-        joinedIn: req.user?.memberProfile?.joinedAt,
+        joinedIn: req.user?.seasonMemberships?.at(-1)?.joinedAt,
+
         committee: req.user?.committee ? req.user?.committee?.name : "No Committee",
         email: req.user?.email,
         phone: req.user?.phone,
@@ -262,11 +245,17 @@ export const optionalAuth = catchAsync(
 
     const userId = decoded.id;
 
+    const season = await getCurrentSeason();
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         committee: true,
-        memberProfile: true,
+        seasonMemberships: {
+          where: {
+            seasonId: season.id,
+          },
+        },
       },
     });
 

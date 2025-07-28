@@ -23,7 +23,8 @@ export const getEvents = catchAsync(
 
     const allowedForPrivate = ["HEAD", "EXCOM", "MEMBER"];
 
-    const isPrivileged = user && allowedForPrivate.includes(user.role);
+    const isPrivileged =
+      user && allowedForPrivate.includes(user.seasonMemberships[0].role);
 
     if (!isPrivileged) {
       filters.private = false;
@@ -78,7 +79,8 @@ export const getEventDetails = catchAsync(
     const user = req.user;
 
     const allowedForPrivate = ["HEAD", "EXCOM"];
-    const isPrivileged = user && allowedForPrivate.includes(user.role);
+    const isPrivileged =
+      user && allowedForPrivate.includes(user.seasonMemberships[0].role);
 
     const event = await prisma.event.findUnique({
       where: { id: id },

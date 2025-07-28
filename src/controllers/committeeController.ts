@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from "express";
 
 import AppError from "../utils/appError";
 import { prisma } from "../lib/prisma";
+import { getCurrentSeason } from "../lib/season";
 
 export const createCommittee = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -23,7 +24,7 @@ export const createCommittee = catchAsync(
         name,
         description,
         topics: JSON.stringify(topicsArray),
-        head: {
+        leaders: {
           connect: {
             id: headId,
           },
@@ -70,7 +71,7 @@ export const updateCommittee = catchAsync(
         name,
         topics: topics ? JSON.stringify(topicsArray) : JSON.stringify(committe.topics),
         description,
-        head: {
+        leaders: {
           connect: {
             id: headId,
           },
@@ -114,10 +115,15 @@ export const deleteCommittee = catchAsync(
 
 export const getCommittees = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    const currentSeason = await getCurrentSeason();
     const [committees, count] = await prisma.$transaction([
       prisma.committee.findMany({
         include: {
-          head: true,
+          leaders: {
+            where: {
+              seasonId: currentSeason.id,
+            },
+          },
           // members: {
           //   select: {
           //     firstName: true,
@@ -144,12 +150,18 @@ export const getCommitteeDetails = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const committeeId = req.params.id;
 
+    const currentSeason = await getCurrentSeason();
+
     const committe = prisma.committee.findUnique({
       where: {
         id: committeeId,
       },
       include: {
-        head: true,
+        leaders: {
+          where: {
+            seasonId: currentSeason.id,
+          },
+        },
         sessions: true,
         members: true,
       },

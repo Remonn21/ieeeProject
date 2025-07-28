@@ -12,6 +12,16 @@ const prisma = new PrismaClient();
 async function main() {
   const adminEmail = process.env.DEFAULT_ADMIN_EMAIL as string;
 
+  console.log("🌱 creating new season...");
+
+  const newSeason = await prisma.season.create({
+    data: {
+      name: "2025",
+      startDate: new Date("2024-8-10"),
+      endDate: new Date("2025-11-10"),
+    },
+  });
+
   // Check if user already exists
   const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
   if (existing) {
@@ -102,20 +112,25 @@ async function main() {
       password: hashedPassword,
       personalEmail: "remonehab21@gmail.com",
       phone: "0123456789",
-      role: "EXCOM",
+      seasonMemberships: {
+        create: {
+          season: {
+            connect: {
+              id: newSeason.id,
+            },
+          },
+          joinedAt: new Date(),
+          role: "EXCOM",
+        },
+      },
       status: "ACTIVE",
       internalRole: {
         connect: {
           id: superAdminRole.id,
         },
       },
-      memberProfile: {
-        create: {
-          faculty: "Engineering",
-          university: "Awesome University",
-          joinedAt: new Date(),
-        },
-      },
+      faculty: "Engineering",
+      university: "Awesome University",
     },
   });
 

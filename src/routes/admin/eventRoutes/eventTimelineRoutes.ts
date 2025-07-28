@@ -19,7 +19,7 @@ const router = Router();
 
 router.get("/:id/timeline", getEventTimeline);
 router.post("/:id/timeline/", validate(addEventDaySchema), addEventDay);
-router.patch("/:id/timeline/dayId", validate(updateEventDaySchema), updateEventDay);
+router.patch("/:id/timeline/:dayId", validate(updateEventDaySchema), updateEventDay);
 router.delete("/:id/timeline/:dayId", deleteEventDay);
 
 // sessions timeline routes

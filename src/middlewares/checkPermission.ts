@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import AppError from "../utils/appError";
 import { prisma } from "../lib/prisma";
+import { getCurrentSeason } from "../lib/season";
 
 type UserType = "internal" | "company";
 
@@ -13,9 +14,16 @@ export const checkPermission = (requiredPermission: string) => {
         return next(new AppError("Unauthorized", 403));
       }
 
+      const currentSeason = await getCurrentSeason();
+
       const user = await prisma.user.findUnique({
         where: { id: userId },
         include: {
+          seasonMemberships: {
+            where: {
+              seasonId: currentSeason.id,
+            },
+          },
           internalRole: {
             include: {
               permissions: {
@@ -32,7 +40,11 @@ export const checkPermission = (requiredPermission: string) => {
         return next(new AppError("User not found", 404));
       }
 
-      if ((user.role !== "HEAD" && user.role !== "EXCOM") || !user.internalRole) {
+      if (
+        (user.seasonMemberships[0].role !== "HEAD" &&
+          user.seasonMemberships[0].role !== "EXCOM") ||
+        !user.internalRole
+      ) {
         return next(new AppError("Access denied. this link is only for admins", 403));
       }
 

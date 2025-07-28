@@ -25,7 +25,8 @@ export const getPosts = catchAsync(
     filters.private = false;
 
     const allowedForPrivate = ["HEAD", "EXCOM", "MEMBER"];
-    const isPrivileged = user && allowedForPrivate.includes(user.role);
+    const isPrivileged =
+      user && allowedForPrivate.includes(user.seasonMemberships[0].role);
 
     if (!isPrivileged) {
       filters.private = false;

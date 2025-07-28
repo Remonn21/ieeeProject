@@ -17,6 +17,80 @@ generator dbml {
   provider = "prisma-dbml-generator"
 }
 
+model Season {
+  id                String             @id @default(cuid())
+  name              String
+  startDate         DateTime
+  endDate           DateTime
+  board             Board[]
+  seasonMemberships SeasonMembership[]
+}
+
+model SeasonMembership {
+  id String @id @default(cuid())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  season   Season @relation(fields: [seasonId], references: [id])
+  seasonId String
+
+  isBoardMember Boolean   @default(false)
+  joinedAt      DateTime  @default(now())
+  role          Role      @default(MEMBER)
+  exitedAt      DateTime?
+  exitReason    String?
+
+  @@unique([userId, seasonId])
+  @@index(seasonId)
+}
+
+model User {
+  id String @id @default(uuid())
+
+  name       String
+  nationalId String?
+
+  status UserStatus @default(ACTIVE)
+
+  email         String  @unique
+  personalEmail String
+  password      String
+  phone         String
+  university    String?
+  faculty       String?
+  ieeeId        String?
+  // for forms
+
+  formSubmissions CustomFormSubmission[]
+
+  // for Admins
+  internalRole   InternalRole? @relation(fields: [internalRoleId], references: [id])
+  internalRoleId String?
+
+  committee   Committee? @relation("committeeMember", fields: [committeeId], references: [id])
+  committeeId String?
+
+  // headOf Committee[] @relation("committeeHead")
+  seasonMemberships SeasonMembership[]
+
+  // memberProfile MemberProfile?
+
+  eventsAttendance         EventAttendance[]
+  eventsSesssionAttendance EventSessionAttendance[]
+  attendances              Attendance[]
+  EventRegistration        EventRegistration[]
+
+  foodOrders FoodOrder[]
+
+  boards Board[]
+
+  posts Post[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
 model InternalRole {
   id   String @id @default(cuid())
   name String @unique
@@ -52,7 +126,7 @@ model InternalRolePermission {
 model Board {
   id          String   @id @default(cuid())
   title       String
-  name        String
+  name        String // for easy access instead of including all the user data
   created     DateTime @default(now())
   updated     DateTime @default(now())
   socialLinks Json
@@ -64,6 +138,11 @@ model Board {
 
   committee   Committee? @relation(fields: [committeeId], references: [id])
   committeeId String?
+
+  season   Season @relation(fields: [seasonId], references: [id])
+  seasonId String
+
+  @@index(seasonId)
 }
 
 enum FameRank {
@@ -73,72 +152,24 @@ enum FameRank {
   vice
 }
 
-model User {
-  id String @id @default(uuid())
+// model MemberProfile {
+//   id         String   @id @default(uuid())
+//   user       User     @relation(fields: [userId], references: [id])
+//   userId     String   @unique
 
-  name       String
-  nationalId String?
-
-  status UserStatus @default(ACTIVE)
-
-  email         String @unique
-  personalEmail String
-  password      String
-  phone         String
-  role          Role   @default(ATTENDEE)
-
-  // for forms
-
-  formSubmissions CustomFormSubmission[]
-
-  // for Admins
-  internalRole   InternalRole? @relation(fields: [internalRoleId], references: [id])
-  internalRoleId String?
-
-  committee   Committee? @relation("committeeMember", fields: [committeeId], references: [id])
-  committeeId String?
-
-  headOf Committee[] @relation("committeeHead")
-
-  memberProfile MemberProfile?
-
-  eventsAttendance         EventAttendance[]
-  eventsSesssionAttendance EventSessionAttendance[]
-  attendances              Attendance[]
-  EventRegistration        EventRegistration[]
-
-  foodOrders FoodOrder[]
-
-  boards Board[]
-
-  posts Post[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
-}
-
-model MemberProfile {
-  id         String   @id @default(uuid())
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String   @unique
-  university String
-  faculty    String
-  ieeeId     String?
-  joinedAt   DateTime @default(now())
-}
+//   joinedAt   DateTime @default(now())
+// }
 
 model Committee {
   id          String  @id @default(uuid())
   name        String
   description String?
-  head        User    @relation("committeeHead", fields: [headId], references: [id])
-  headId      String
+  leaders     Board[]
   topics      Json?
 
   sessions Session[]
 
-  members User[]  @relation("committeeMember")
-  boards  Board[]
+  members User[] @relation("committeeMember")
   files   File[]
 }
 

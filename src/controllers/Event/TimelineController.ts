@@ -171,19 +171,19 @@ export const addEventDaySession = catchAsync(
     const parsedStartTime = parseTimeInHours(startTime, eventDay.date);
     const parsedEndTime = endTime ? parseTimeInHours(endTime, eventDay.date) : null;
 
-    const isOverlapping = eventDay.agendaItems.some((item) => {
-      const existingStart = item.startTime.getTime();
-      const existingEnd = item.endTime?.getTime() ?? existingStart + 1; // fallback to non-null
+    // const isOverlapping = eventDay.agendaItems.some((item) => {
+    //   const existingStart = item.startTime.getTime();
+    //   const existingEnd = item.endTime?.getTime() ?? existingStart + 1; // fallback to non-null
 
-      const newStart = parsedStartTime.getTime();
-      const newEnd = parsedEndTime?.getTime() ?? newStart + 1;
+    //   const newStart = parsedStartTime.getTime();
+    //   const newEnd = parsedEndTime?.getTime() ?? newStart + 1;
 
-      return newStart < existingEnd && newEnd > existingStart;
-    });
+    //   return newStart < existingEnd && newEnd > existingStart;
+    // });
 
-    if (isOverlapping) {
-      return next(new AppError("Time slot overlaps with another session", 400));
-    }
+    // if (isOverlapping) {
+    //   return next(new AppError("Time slot overlaps with another session", 400));
+    // }
 
     await prisma.eventDay.update({
       where: {

@@ -15,10 +15,12 @@ const router = Router();
 // router.use(authorizeRoles("EXCOM", "HEAD"));
 export const uploadImageFiles = createUploadMiddleware("temp").array("images");
 
-router.get("/", getSessions);
-router.post("/", uploadImageFiles, createSession);
-router.patch("/:id", uploadImageFiles, updateSession);
-router.delete("/:id", deleteSession);
-router.get("/:id", getSessionDetails);
+//TODO:fix based on new update
+
+// router.get("/", getSessions);
+// router.post("/", uploadImageFiles, createSession);
+// router.patch("/:id", uploadImageFiles, updateSession);
+// router.delete("/:id", deleteSession);
+// router.get("/:id", getSessionDetails);
 
 export default router;
