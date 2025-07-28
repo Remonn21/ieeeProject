@@ -199,8 +199,10 @@ model Event {
 
   registrations EventRegistration[]
 
-  form   CustomForm? @relation(fields: [formId], references: [id])
-  formId String?     @unique
+  forms CustomForm[]
+
+  registrationForm   CustomForm? @relation("RegistrationForm", fields: [registrationFormId], references: [id])
+  registrationFormId String?     @unique
 
   coverImage String
   gallery    EventMedia[]
@@ -412,18 +414,27 @@ enum RegistrationStatus {
 }
 
 model CustomForm {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  type        FormType @default(ANY) // optional, like "event", "survey", "feedback"
+  id                 String   @id @default(uuid())
+  name               String
+  description        String?
+  type               FormType @default(ANY) // optional, like "event", "survey", "feedback"
+  isRegistrationForm Boolean  @default(false) //to check if this the registartion form for the event
+  isPublic           Boolean  @default(true)
 
   startDate DateTime  @default(now())
   endDate   DateTime? //TODO: make it required later
 
-  event  Event?
-  fields CustomFormField[]
+  event   Event?  @relation(fields: [eventId], references: [id])
+  eventId String?
+
+  registrationFor Event? @relation("RegistrationForm")
 
   responses CustomFormSubmission[]
+
+  fields CustomFormField[]
+
+  @@index([eventId, type])
+  @@index([eventId, isRegistrationForm])
 }
 
 enum FormType {
@@ -446,8 +457,8 @@ model CustomFormField {
   pattern     String? //for custom validations (regex) for text and email
   options     String[]
 
-  form      CustomForm           @relation(fields: [formId], references: [id])
-  formId    String
+  form      CustomForm?          @relation(fields: [formId], references: [id])
+  formId    String?
   responses CustomFormResponse[]
 }
 

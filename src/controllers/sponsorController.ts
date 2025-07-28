@@ -4,40 +4,65 @@ import { NextFunction, Request, Response } from "express";
 import AppError from "../utils/appError";
 import { prisma } from "../lib/prisma";
 import { handleNormalUploads } from "../utils/handleNormalUpload";
+import { options } from "sanitize-html";
+
+interface createSponsorOptions {
+  name: string;
+  image: Express.Multer.File;
+  isSeasonSponsor?: boolean;
+}
+
+export const createSponsorCore = async (options: createSponsorOptions) => {
+  const { name, isSeasonSponsor, image } = options;
+
+  if (!name) {
+    throw new AppError("Sponsor name is required", 400);
+  }
+
+  if (!image) {
+    throw new AppError("Photo is required", 400);
+  }
+
+  const sponsor = await prisma.sponsor.create({
+    data: {
+      name,
+      isSeasonSponsor: !!isSeasonSponsor || false,
+    },
+  });
+
+  const photoUrl = await handleNormalUploads([image], {
+    entityName: `sponsor-${Date.now()}`,
+    folderName: `sponsors/${sponsor.id}`,
+  });
+
+  const updatedSponsor = await prisma.sponsor.update({
+    where: { id: sponsor.id },
+    data: {
+      images: {
+        create: {
+          url: photoUrl[0],
+        },
+      },
+    },
+    include: {
+      images: {
+        select: {
+          id: true,
+          url: true,
+        },
+      },
+    },
+  });
+
+  return updatedSponsor;
+};
 
 export const createSponsor = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, isSeasonSponsor } = req.body;
-
-    if (!name) {
-      return next(new AppError("Sponsor name is required", 400));
-    }
-
-    if (!req.file) {
-      return next(new AppError("Photo is required", 400));
-    }
-
-    const sponsor = await prisma.sponsor.create({
-      data: {
-        name,
-        isSeasonSponsor: !!isSeasonSponsor || false,
-      },
-    });
-
-    const photoUrl = await handleNormalUploads([req.file], {
-      entityName: `sponsor-${Date.now()}`,
-      folderName: `sponsors/${sponsor.id}`,
-    });
-
-    await prisma.sponsor.update({
-      where: { id: sponsor.id },
-      data: {
-        images: {
-          create: {
-            url: photoUrl[0],
-          },
-        },
-      },
+    const sponsor = await createSponsorCore({
+      name: req.body.name,
+      image: req.file as Express.Multer.File,
+      isSeasonSponsor: req.body.isSeasonSponsor,
     });
 
     res.status(201).json({

@@ -17,7 +17,7 @@ const allowedFieldTypes = [
   "FILE",
   "DATE",
   "PARAGRAPH",
-]; // Add more field types if neededTypes
+];
 
 const allowedFormTypes = ["EVENT", "SURVEY", "FEEDBACK", "POST", "ANY"];
 
@@ -43,6 +43,7 @@ type createCustomFormParams = {
   endDate: Date;
   formFields: FormFieldInput[];
   eventId?: string;
+  isRegistrationForm?: boolean;
 };
 
 export const createCustomForm = async ({
@@ -53,6 +54,7 @@ export const createCustomForm = async ({
   type,
   formFields,
   eventId,
+  isRegistrationForm = false,
 }: createCustomFormParams) => {
   if (!allowedFormTypes.includes(type)) {
     throw new AppError("Invalid form type", 400);
@@ -76,7 +78,7 @@ export const createCustomForm = async ({
         label: field.label,
         name: field.name,
 
-        required: field.required ?? field.required,
+        required: field.required ?? false,
         min: field.min ?? null,
         max: field.max ?? null,
         placeholder: field.placeholder,
@@ -86,6 +88,8 @@ export const createCustomForm = async ({
     }),
   ];
 
+  console.log("is?", isRegistrationForm);
+
   const form = await prisma.customForm.create({
     data: {
       name,
@@ -94,24 +98,51 @@ export const createCustomForm = async ({
       description: cleanHtml(description),
       type: type.toUpperCase() as FormType,
       ...(eventId && { event: { connect: { id: eventId } } }),
+      ...(isRegistrationForm && { registrationFor: { connect: { id: eventId } } }),
       fields: {
         create: fields,
       },
     },
   });
 
+  if (isRegistrationForm) {
+    await prisma.event.update({
+      where: {
+        id: eventId,
+      },
+      data: {
+        registrationForm: {
+          connect: {
+            id: form.id,
+          },
+        },
+      },
+    });
+  }
+
   return form;
 };
 
 export const createForm = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, description, startDate, endDate, type, formFields } = req.body;
+    const { name, description, startDate, endDate, type, formFields, eventId } = req.body;
+
+    const event = await prisma.event.findUnique({
+      where: {
+        id: eventId,
+      },
+    });
+
+    if (!event) {
+      return next(new AppError("event not found", 400));
+    }
 
     const form = await createCustomForm({
       name,
       description,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
+      ...(eventId && { eventId }),
       type,
       formFields,
     });
@@ -160,6 +191,9 @@ export const searchForms = catchAsync(
     const [forms, total] = await Promise.all([
       prisma.customForm.findMany({
         where: filters,
+        include: {
+          event: true,
+        },
         orderBy: { name: "asc" },
         take: paginated === "true" ? limit : undefined,
         skip: paginated === "true" ? skip : undefined,

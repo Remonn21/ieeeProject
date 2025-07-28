@@ -4,6 +4,7 @@ import { NextFunction, Request, Response } from "express";
 import AppError from "../../utils/appError";
 import { prisma } from "../../lib/prisma";
 import { handleNormalUploads } from "../../utils/handleNormalUpload";
+import { createSponsorCore } from "../sponsorController";
 
 export const getEventSponsors = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -53,7 +54,7 @@ export const getEventSponsors = catchAsync(
 export const addEventSponsor = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const { sponsorId, photoId } = req.body;
+    const { sponsorId, photoId, name, isSeasonSponsor } = req.body;
 
     if (!id) {
       return next(new AppError("Event ID is required", 400));
@@ -63,69 +64,91 @@ export const addEventSponsor = catchAsync(
       where: { id },
     });
 
-    const sponsor = await prisma.sponsor.findUnique({
-      where: {
-        id: sponsorId,
-      },
-      include: {
-        images: {
-          select: {
-            id: true,
-            url: true,
-          },
-        },
-      },
-    });
-
     if (!event) {
       return next(new AppError("Event not found", 404));
     }
 
-    if (!sponsor) {
-      return next(new AppError("Sponsor not found", 404));
-    }
-
+    let newSponsor;
     let chosenId = photoId;
 
-    if (!photoId) {
+    // if creating new sponsor
+    if (!sponsorId) {
       if (!req.file) {
-        return next(new AppError("You must select a old photo or upload new photo", 404));
+        return next(
+          new AppError("sponsor image is required when creating new sponsor", 400)
+        );
       }
 
-      const photoUrl = (
-        await handleNormalUploads([req.file], {
-          entityName: `sponsor-${Date.now()}`,
-          folderName: `sponsors/${id}`,
-        })
-      )[0];
-
-      const updatedSponsor = await prisma.sponsor.update({
-        where: {
-          id: sponsorId,
-        },
-        include: {
-          images: {
-            select: {
-              id: true,
-              url: true,
-            },
-          },
-        },
-        data: {
-          images: {
-            create: {
-              url: photoUrl,
-            },
-          },
-        },
+      newSponsor = await createSponsorCore({
+        image: req.file as Express.Multer.File,
+        name,
+        isSeasonSponsor: isSeasonSponsor ?? false,
       });
-      chosenId = updatedSponsor.images.at(-1)!.id;
+
+      chosenId = newSponsor.images.at(0)!.id;
+    } else {
+      // if selecting from available sponsors
+
+      if (!photoId) {
+        if (!req.file) {
+          return next(
+            new AppError("You must select a old photo or upload new photo", 404)
+          );
+        }
+
+        const sponsor = await prisma.sponsor.findUnique({
+          where: {
+            id: sponsorId,
+          },
+          include: {
+            images: {
+              select: {
+                id: true,
+                url: true,
+              },
+            },
+          },
+        });
+
+        if (!sponsor) {
+          return next(new AppError("Sponsor not found", 404));
+        }
+
+        const photoUrl = (
+          await handleNormalUploads([req.file], {
+            entityName: `sponsor-${Date.now()}`,
+            folderName: `sponsors/${id}`,
+          })
+        )[0];
+
+        const updatedSponsor = await prisma.sponsor.update({
+          where: {
+            id: sponsorId,
+          },
+          include: {
+            images: {
+              select: {
+                id: true,
+                url: true,
+              },
+            },
+          },
+          data: {
+            images: {
+              create: {
+                url: photoUrl,
+              },
+            },
+          },
+        });
+        chosenId = updatedSponsor.images.at(-1)!.id;
+      }
     }
 
     await prisma.eventSponsor.create({
       data: {
         eventId: id,
-        sponsorId: sponsorId,
+        sponsorId: newSponsor ? newSponsor.id : sponsorId,
         photoId: chosenId,
       },
     });

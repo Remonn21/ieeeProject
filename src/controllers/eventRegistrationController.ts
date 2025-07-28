@@ -67,7 +67,7 @@ export const getRegisterResponseDetails = catchAsync(
       include: {
         event: {
           include: {
-            form: {
+            registrationForm: {
               include: {
                 fields: true,
               },
@@ -94,7 +94,7 @@ export const getRegisterResponseDetails = catchAsync(
       return next(new AppError("Registration not found", 404));
     }
 
-    const formFields = userResponse.event.form?.fields || [];
+    const formFields = userResponse.event.registrationForm?.fields || [];
     const responses = userResponse.submission?.responses || [];
 
     const detailedResponses = formFields.map((field) => {
@@ -133,7 +133,7 @@ export const getEventRegistration = catchAsync(
         id,
       },
       include: {
-        form: {
+        registrationForm: {
           include: {
             fields: true,
           },
@@ -147,7 +147,7 @@ export const getEventRegistration = catchAsync(
 
     res.status(200).json({
       status: "success",
-      data: [...(event.form?.fields as Array<any>)],
+      data: [...(event.registrationForm?.fields as Array<any>)],
     });
   }
 );
@@ -165,7 +165,7 @@ export const registerToEvent = catchAsync(
         id,
       },
       include: {
-        form: {
+        registrationForm: {
           include: {
             fields: true,
           },
@@ -186,7 +186,7 @@ export const registerToEvent = catchAsync(
       );
     }
 
-    const validatedInputs: any = event.form?.fields.map((formField) => {
+    const validatedInputs: any = event.registrationForm?.fields.map((formField) => {
       const userInput = formFields.find(
         (input: CustomFormResponse) => input.fieldId === formField.id
       );
@@ -247,7 +247,7 @@ export const registerToEvent = catchAsync(
 
     const submission = await prisma.customFormSubmission.create({
       data: {
-        formId: event.form?.id!,
+        formId: event.registrationForm?.id!,
         userId: user ? user.id : null,
         responses: {
           create: filteredInputs.map((input: any) => ({

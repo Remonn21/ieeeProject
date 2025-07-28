@@ -139,8 +139,9 @@ Table Event {
   category EventCategory [not null]
   location String
   registrations EventRegistration [not null]
-  form CustomForm
-  formId String [unique]
+  forms CustomForm [not null]
+  registrationForm CustomForm
+  registrationFormId String [unique]
   coverImage String [not null]
   gallery EventMedia [not null]
   speakers EventSpeaker [not null]
@@ -294,11 +295,15 @@ Table CustomForm {
   name String [not null]
   description String
   type FormType [not null, default: 'ANY']
+  isRegistrationForm Boolean [not null, default: false]
+  isPublic Boolean [not null, default: true]
   startDate DateTime [default: `now()`, not null]
   endDate DateTime
   event Event
-  fields CustomFormField [not null]
+  eventId String
+  registrationFor Event
   responses CustomFormSubmission [not null]
+  fields CustomFormField [not null]
 }
 
 Table CustomFormField {
@@ -312,8 +317,8 @@ Table CustomFormField {
   max Int
   pattern String
   options String[] [not null]
-  form CustomForm [not null]
-  formId String [not null]
+  form CustomForm
+  formId String
   responses CustomFormResponse [not null]
 }
 
@@ -535,7 +540,7 @@ Ref: Attendance.sessionId > Session.id
 
 Ref: Attendance.userId > User.id
 
-Ref: Event.formId - CustomForm.id
+Ref: Event.registrationFormId - CustomForm.id
 
 Ref: EventMedia.eventId > Event.id
 
@@ -584,6 +589,8 @@ Ref: EventRegistration.eventId > Event.id
 Ref: EventRegistration.userId > User.id
 
 Ref: EventRegistration.submissionId - CustomFormSubmission.id
+
+Ref: CustomForm.eventId > Event.id
 
 Ref: CustomFormField.formId > CustomForm.id
 

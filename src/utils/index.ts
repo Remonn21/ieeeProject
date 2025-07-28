@@ -1,6 +1,7 @@
 import sanitizeHtml from "sanitize-html";
 import crypto from "crypto";
 import slugify from "slugify";
+import { parse } from "date-fns";
 
 export const generateSlug = (name: string): string => {
   let slug = slugify(name, { lower: true, strict: true });
@@ -52,4 +53,18 @@ export const cleanHtml = (inputValue: string): string => {
       },
     },
   });
+};
+/** I  have generated the explainion using AI
+ * Parse a time string given in "HH:mm" format to a Date object with the given date.
+ * @param {string} timeStr - The time string given in "HH:mm" format.
+ * @param {Date} date - The date object to pair with the time string.
+ * @returns {Date} - A new Date object with the given date and time.
+ */
+
+export const parseTimeInHours = (timeStr: string, date: Date) => {
+  return parse(
+    `${date.toISOString().split("T")[0]} ${timeStr}`,
+    "yyyy-MM-dd HH:mm",
+    new Date()
+  );
 };

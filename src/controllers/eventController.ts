@@ -378,6 +378,32 @@ export const createEvent = catchAsync(
       },
     });
 
+    const eventFormFields = [];
+
+    eventFormFields.push({
+      label: "Email",
+      type: "EMAIL",
+      name: "email",
+      required: true,
+    });
+
+    eventFormFields.push({
+      label: "name",
+      type: "TEXT",
+      name: "name",
+      required: true,
+    });
+
+    const form = await createCustomForm({
+      name: event.name,
+      type: "EVENT",
+      description: "Event registration form",
+      formFields: eventFormFields,
+      eventId: event.id,
+      startDate: event.registrationStart,
+      endDate: event.registrationEnd,
+    });
+
     res.status(200).json({
       status: "success",
       data: {
@@ -609,7 +635,7 @@ export const deleteEvent = catchAsync(
     if (!event) {
       return next(new AppError("Event not found", 404));
     }
-    // TODO:removee the event form
+    // TODO:removee the event form responses
     await Promise.all([
       prisma.eventRegistration.deleteMany({
         where: { eventId: id },
@@ -617,8 +643,8 @@ export const deleteEvent = catchAsync(
       prisma.eventAttendance.deleteMany({
         where: { eventId: id },
       }),
-      prisma.customForm.delete({
-        where: { id: event.formId as string },
+      prisma.customForm.deleteMany({
+        where: { eventId: id },
       }),
       prisma.eventDay.deleteMany({
         where: { eventId: id },
