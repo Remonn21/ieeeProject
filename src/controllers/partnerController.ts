@@ -20,7 +20,7 @@ export const createPartner = catchAsync(
     const partner = await prisma.partner.create({
       data: {
         name,
-        isSeasonPartner: !!isSeasonPartner || false,
+        isSeasonPartner: isSeasonPartner ? true : false,
       },
     });
 
@@ -44,6 +44,58 @@ export const createPartner = catchAsync(
       status: "success",
       data: {
         partner,
+      },
+    });
+  }
+);
+
+export const updatePartner = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const { name, isSeasonPartner } = req.body;
+
+    const partner = await prisma.partner.findUnique({ where: { id } });
+
+    if (!partner) {
+      return next(new AppError("Partner not found", 404));
+    }
+
+    const updates: any = {
+      name: name ?? partner.name,
+      isSeasonPartner:
+        typeof isSeasonPartner === "boolean" ? isSeasonPartner : partner.isSeasonPartner,
+    };
+
+    if (req.file) {
+      const photoUrl = await handleNormalUploads([req.file], {
+        entityName: `partner-${Date.now()}`,
+        folderName: `partners/${id}`,
+      });
+
+      updates.images = {
+        create: {
+          url: photoUrl[0],
+        },
+      };
+    }
+
+    const updatedPartner = await prisma.partner.update({
+      where: { id },
+      data: updates,
+      include: {
+        images: {
+          select: {
+            id: true,
+            url: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        partner: updatedPartner,
       },
     });
   }

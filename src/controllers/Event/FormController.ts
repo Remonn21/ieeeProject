@@ -16,7 +16,7 @@ export const getEventForms = catchAsync(
 
     res.status(200).json({
       status: "success",
-      data: forms,
+      data: { forms },
     });
   }
 );
@@ -40,7 +40,9 @@ export const getFormDetails = catchAsync(
 
     res.status(200).json({
       status: "success",
-      data: form,
+      data: {
+        form,
+      },
     });
   }
 );

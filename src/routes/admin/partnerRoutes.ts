@@ -8,6 +8,7 @@ import {
   deletePartner,
   getPartnerData,
   searchPartners,
+  updatePartner,
 } from "../../controllers/partnerController";
 
 const router = Router();
@@ -20,6 +21,7 @@ router.get(
   searchPartners
 );
 router.post("/", uploadImageFile, createPartner);
+router.patch("/:id/", uploadImageFile, updatePartner);
 router.post("/:id/newphoto", uploadImageFile, addPartnerPhoto);
 router.delete("/:id", deletePartner);
 router.get("/:id", getPartnerData);
