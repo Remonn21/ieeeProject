@@ -15,24 +15,23 @@ import { isValid as isValidDate, parseISO } from "date-fns";
 
 export const getBoard = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { season, allSeasons } = req.query;
+    const { seasonId, allSeasons } = req.query;
     const selectedSeasons: string[] = [];
 
-    if (season && typeof season !== "string") {
+    if (seasonId && typeof seasonId !== "string") {
       return next(new AppError("season must be a string", 400));
     }
 
-    if (season && typeof season === "string") {
-      const parsed = parseISO(season);
+    if (seasonId) {
+      // const parsed = new Date(season);
+      // console.log(parsed);
+      // if (!isValidDate(parsed)) {
+      //   return next(new AppError("Invalid date format", 400));
+      // }
 
-      if (!isValidDate(parsed)) {
-        return next(new AppError("Invalid date format", 400));
-      }
-
-      const selectedSeason = await prisma.season.findFirst({
+      const selectedSeason = await prisma.season.findUnique({
         where: {
-          startDate: { lte: parsed },
-          endDate: { gte: parsed },
+          id: seasonId,
         },
       });
 
@@ -43,7 +42,7 @@ export const getBoard = catchAsync(
       selectedSeasons.push(selectedSeason.id);
     }
 
-    if (!season && !allSeasons) {
+    if (!seasonId && !allSeasons) {
       const currentSeason = await getCurrentSeason();
       selectedSeasons.push(currentSeason.id);
     }
@@ -71,27 +70,30 @@ export const getBoard = catchAsync(
 
     const groupedBySeason: Record<string, typeof boards> = {};
 
-    for (const board of boards) {
-      const seasonName = board.season?.name || "Unknown";
+    if (allSeasons) {
+      for (const board of boards) {
+        const seasonName = board.season?.name || "Unknown";
 
-      if (!groupedBySeason[seasonName]) {
-        groupedBySeason[seasonName] = [];
+        if (!groupedBySeason[seasonName]) {
+          groupedBySeason[seasonName] = [];
+        }
+
+        groupedBySeason[seasonName].push(board);
       }
-
-      groupedBySeason[seasonName].push(board);
     }
 
     res.status(200).json({
       status: "success",
-      data: { boards: groupedBySeason },
+      data: { boards: allSeasons ? groupedBySeason : boards },
     });
   }
 );
 
 export const createBoardMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { position, title, socialLinks, userId, committeeId, name, seasonId } =
-      req.body;
+    const { position, title, socialLinks, userId, committeeId, name } = req.body;
+
+    let { seasonId } = req.body;
 
     const [userDoc, committeeDoc, seasonDoc] = await Promise.all([
       userId
@@ -104,13 +106,18 @@ export const createBoardMember = catchAsync(
             where: { id: committeeId },
           })
         : null,
-      prisma.season.findUnique({
-        where: { id: seasonId },
-      }),
+      seasonId
+        ? prisma.season.findUnique({
+            where: { id: seasonId },
+          })
+        : null,
     ]);
 
-    if (!seasonDoc) {
+    if (seasonId && !seasonDoc) {
       return next(new AppError("season not found", 400));
+    }
+    if (!seasonId) {
+      seasonId = (await getCurrentSeason()).id;
     }
 
     const imageFile = req.file as Express.Multer.File;
@@ -135,8 +142,6 @@ export const createBoardMember = catchAsync(
         url: link.url,
       };
     });
-
-    console.log("links", socialLinksArray);
 
     const boardMember = await prisma.board.create({
       data: {

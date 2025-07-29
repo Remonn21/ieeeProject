@@ -230,6 +230,9 @@ export const deletePartner = catchAsync(
     await prisma.partner.delete({
       where: { id },
     });
+    await prisma.eventPartner.deleteMany({
+      where: { partnerId: id },
+    });
     await prisma.partnerPhoto.deleteMany({
       where: { partnerId: id },
     });

@@ -7,12 +7,18 @@ import { getCurrentSeason } from "../lib/season";
 
 export const createCommittee = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, description, topics, headId } = req.body;
+    const { name, description, topics, headIds } = req.body;
 
     const topicsArray = Array.isArray(topics) ? topics : JSON.parse(topics);
 
-    const user = await prisma.user.findUnique({
-      where: { id: headId },
+    console.log("HEADS", headIds);
+
+    const user = await prisma.user.findMany({
+      where: {
+        id: {
+          in: headIds,
+        },
+      },
     });
 
     if (!user) {
@@ -25,9 +31,7 @@ export const createCommittee = catchAsync(
         description,
         topics: JSON.stringify(topicsArray),
         leaders: {
-          connect: {
-            id: headId,
-          },
+          connect: headIds.map((id: string) => ({ id })),
         },
       },
     });
@@ -116,12 +120,19 @@ export const deleteCommittee = catchAsync(
 export const getCommittees = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const currentSeason = await getCurrentSeason();
+
+    console.log(currentSeason);
     const [committees, count] = await prisma.$transaction([
       prisma.committee.findMany({
         include: {
           leaders: {
             where: {
               seasonId: currentSeason.id,
+            },
+            select: {
+              name: true,
+              image: true,
+              title: true,
             },
           },
           // members: {

@@ -12,6 +12,9 @@ export const getEventForms = catchAsync(
       where: {
         eventId: id,
       },
+      include: {
+        fields: true,
+      },
     });
 
     res.status(200).json({

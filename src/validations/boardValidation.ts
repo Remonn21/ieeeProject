@@ -30,7 +30,7 @@ export const createBoardMemberSchema = z.object({
   title: z.string().min(1, "Title is required"),
   name: z.string().min(1, "Name is required"),
   socialLinks: socialLinksSchema,
-  seasonId: z.string().cuid("Invalid season Id"),
+  seasonId: z.string().cuid("Invalid season Id").optional(),
   userId: z.string().uuid("Invalid user ID").optional(),
   committeeId: z.string().uuid("Invalid committee ID").optional(),
 });

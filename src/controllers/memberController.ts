@@ -15,9 +15,9 @@ export const getMembers = catchAsync(
     const skip = (page - 1) * limit;
 
     const filters: any = {
-      role: {
-        not: "ATTENDEE",
-      },
+      // role: {
+      //   not: "ATTENDEE",
+      // },
     };
 
     if (search) {
