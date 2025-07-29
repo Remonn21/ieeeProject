@@ -2,22 +2,11 @@ import { NextFunction, Request, Response } from "express";
 
 import AppError from "../utils/appError";
 import { Prisma } from "@prisma/client";
-// import { Error as MongooseError } from "mongoose";
 
-// const handleCastErrorDB = (err: MongooseError.CastError) => {
-//   const message = `Invalid ${err.path}: ${err.value}`;
-//   return new AppError(message, 400);
-// };
 const handleDuplicateFieldsDB = (target: string) => {
   const message = `"${target}" already exists. please use another valie!`;
   return new AppError(message, 400);
 };
-
-// const handleValidationErrorDB = (err: MongooseError.ValidationError) => {
-//   const errors = Object.values(err.errors).map((el) => el.message);
-//   const message = `Invalid input data. ${errors.join(" ")}`;
-//   return new AppError(message, 400);
-// };
 
 const handleJWTError = () => new AppError("Invalid token, please log in again", 401);
 

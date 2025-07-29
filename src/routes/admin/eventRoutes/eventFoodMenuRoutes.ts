@@ -8,6 +8,7 @@ import {
 } from "../../../controllers/Event/MediaController";
 import {
   createFoodMenu,
+  deleteFoodMenu,
   getFoodMenusForEvent,
   updateFoodMenu,
 } from "../../../controllers/eventFoodController";
@@ -22,6 +23,6 @@ const uploadImages = createUploadMiddleware("temp").fields([
 router.get("/:id/food-menus", getFoodMenusForEvent);
 router.post("/:id/food-menus", uploadImages, createFoodMenu);
 router.patch("/:id/food-menus/:menuId", uploadImages, updateFoodMenu);
-router.delete("/:eventId/food-menus/:menuId", deleteEventMedia);
+router.delete("/:id/food-menus/:menuId", deleteFoodMenu);
 
 export default router;

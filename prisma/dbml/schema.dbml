@@ -8,6 +8,8 @@ Table Season {
   startDate DateTime [not null]
   endDate DateTime [not null]
   board Board [not null]
+  events Event [not null]
+  posts Post [not null]
   seasonMemberships SeasonMembership [not null]
 }
 
@@ -151,6 +153,8 @@ Table Event {
   registrationStart DateTime [not null]
   registrationEnd DateTime [not null]
   private Boolean [not null, default: false]
+  season Season [not null]
+  seasonId String [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [default: `now()`, not null]
   category EventCategory [not null]
@@ -314,6 +318,7 @@ Table CustomForm {
   type FormType [not null, default: 'ANY']
   isRegistrationForm Boolean [not null, default: false]
   isPublic Boolean [not null, default: true]
+  isPublished Boolean [not null, default: true]
   startDate DateTime [default: `now()`, not null]
   endDate DateTime
   event Event
@@ -321,6 +326,8 @@ Table CustomForm {
   registrationFor Event
   responses CustomFormSubmission [not null]
   fields CustomFormField [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
 }
 
 Table CustomFormField {
@@ -387,6 +394,8 @@ Table Post {
   content String [not null]
   author User [not null]
   authorId String [not null]
+  season Season [not null]
+  seasonId String [not null]
   private Boolean [not null, default: false]
   images String[] [not null]
   videos String[] [not null]
@@ -559,6 +568,8 @@ Ref: Attendance.sessionId > Session.id
 
 Ref: Attendance.userId > User.id
 
+Ref: Event.seasonId > Season.id
+
 Ref: Event.registrationFormId - CustomForm.id
 
 Ref: EventMedia.eventId > Event.id
@@ -624,6 +635,8 @@ Ref: CustomFormResponse.submissionId > CustomFormSubmission.id
 Ref: SpeakerPhoto.speakerId > Speaker.id
 
 Ref: Post.authorId > User.id
+
+Ref: Post.seasonId > Season.id
 
 Ref: SponsorPhoto.sponsorId > Sponsor.id
 

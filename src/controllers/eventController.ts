@@ -6,6 +6,7 @@ import { prisma } from "../lib/prisma";
 import { handleNormalUploads } from "../utils/handleNormalUpload";
 import { Speaker } from "@prisma/client";
 import { createCustomForm } from "./formController";
+import { getCurrentSeason } from "../lib/season";
 
 export const getEvents = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -359,6 +360,7 @@ export const createEvent = catchAsync(
       folderName: "events",
     });
 
+    const currentSeason = await getCurrentSeason();
     const event = await prisma.event.create({
       data: {
         name,
@@ -368,6 +370,11 @@ export const createEvent = catchAsync(
         registrationStart: new Date(registrationStart),
         registrationEnd: new Date(registrationEnd),
         coverImage: eventImage[0],
+        season: {
+          connect: {
+            id: currentSeason.id,
+          },
+        },
         category,
         location,
       },
@@ -406,10 +413,26 @@ export const createEvent = catchAsync(
       endDate: event.registrationEnd,
     });
 
+    const updatedEvent = await prisma.event.update({
+      where: { id: event.id },
+      data: {
+        forms: {
+          connect: {
+            id: form.id,
+          },
+        },
+        registrationForm: {
+          connect: {
+            id: form.id,
+          },
+        },
+      },
+    });
+
     res.status(200).json({
       status: "success",
       data: {
-        event,
+        event: updatedEvent,
       },
     });
   }

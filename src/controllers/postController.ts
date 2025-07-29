@@ -9,6 +9,7 @@ import {
   handleNormalUploads,
 } from "../utils/handleNormalUpload";
 import { cleanHtml } from "../utils";
+import { getCurrentSeason } from "../lib/season";
 
 export const getPosts = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -87,11 +88,18 @@ export const createPost = catchAsync(
 
     const isPrivate = Boolean(privatePost);
 
+    const currentSeason = await getCurrentSeason();
+
     const post = await prisma.post.create({
       data: {
         title,
         content: cleanedContent,
         private: isPrivate,
+        season: {
+          connect: {
+            id: currentSeason.id,
+          },
+        },
         author: {
           connect: {
             id: user.id,

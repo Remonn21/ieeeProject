@@ -23,6 +23,8 @@ model Season {
   startDate         DateTime
   endDate           DateTime
   board             Board[]
+  events            Event[]
+  posts             Post[]
   seasonMemberships SeasonMembership[]
 }
 
@@ -220,6 +222,9 @@ model Event {
   registrationStart DateTime
   registrationEnd   DateTime
   private           Boolean  @default(false)
+
+  season   Season @relation(fields: [seasonId], references: [id])
+  seasonId String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -451,6 +456,7 @@ model CustomForm {
   type               FormType @default(ANY) // optional, like "event", "survey", "feedback"
   isRegistrationForm Boolean  @default(false) //to check if this the registartion form for the event
   isPublic           Boolean  @default(true)
+  isPublished        Boolean  @default(true)
 
   startDate DateTime  @default(now())
   endDate   DateTime? //TODO: make it required later
@@ -463,6 +469,9 @@ model CustomForm {
   responses CustomFormSubmission[]
 
   fields CustomFormField[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   @@index([eventId, type])
   @@index([eventId, isRegistrationForm])
@@ -551,6 +560,9 @@ model Post {
   content  String
   author   User   @relation(fields: [authorId], references: [id])
   authorId String
+
+  season   Season @relation(fields: [seasonId], references: [id])
+  seasonId String
 
   private Boolean @default(false)
 

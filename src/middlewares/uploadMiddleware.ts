@@ -66,6 +66,6 @@ export const createUploadMiddleware = (dirname: string) => {
   return multer({
     storage,
     fileFilter,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max per image
+    limits: { fileSize: 1000 * 1024 * 1024 }, // 10MB max per image
   });
 };

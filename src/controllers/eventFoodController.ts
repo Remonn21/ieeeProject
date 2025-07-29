@@ -47,7 +47,7 @@ export const createFoodMenu = catchAsync(
     const [menuImages, coverImage] = await Promise.all([
       handleNormalUploads(files.menuImages, {
         folderName: `events/${id}/food-menu/${name}`,
-        entityName: `menuImages`,
+        entityName: `menu-images`,
       }),
       handleNormalUploads(files.coverImage, {
         folderName: `events/${id}/food-menu/${name}`,
@@ -95,7 +95,7 @@ export const updateFoodMenu = catchAsync(
     if (removedImages) {
       deleteUploadedFiles(removedImages, {
         folderName: `events/${eventId}/food-menu/${name}`,
-        entityName: `menuImages`,
+        entityName: `menu-images`,
       });
     }
     if (files.coverImage) {
@@ -113,7 +113,7 @@ export const updateFoodMenu = catchAsync(
     if (files.menuImages) {
       menuImages = await handleNormalUploads(files.menuImages, {
         folderName: `events/${eventId}/food-menu/${name}`,
-        entityName: `menuImages`,
+        entityName: `menu-images`,
       });
     }
 
@@ -228,6 +228,31 @@ export const getEventFoodOrders = catchAsync(
         total: totalOrders,
       },
     });
+  }
+);
+
+export const deleteFoodMenu = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id, menuId } = req.params;
+
+    const menu = await prisma.foodMenu.findUnique({
+      where: { id_eventId: { id: menuId, eventId: id } },
+    });
+
+    if (!menu) {
+      return next(new AppError("Food menu not found", 404));
+    }
+
+    await deleteUploadedFiles([menu.coverImage], {
+      folderName: `events/${menu.eventId}/food-menu/${menu.name}`,
+      entityName: `cover-image`,
+    });
+    await deleteUploadedFiles(menu.menuImages, {
+      folderName: `events/${menu.eventId}/food-menu/${menu.name}`,
+      entityName: `menu-images`,
+    });
+
+    await prisma.foodMenu.delete({ where: { id: menuId } });
   }
 );
 

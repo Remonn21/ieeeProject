@@ -30,6 +30,7 @@ const router = Router();
 // router.use(authorizeRoles("EXCOM", "Head"));
 import eventSpeakerRoutes from "./eventSpeakerRoutes";
 import eventSponsorRoutes from "./eventSponsorRoutes";
+import eventPartnerRoutes from "./eventPartnerRoutes";
 import eventTimelineRoutes from "./eventTimelineRoutes";
 import eventFoodMenuRoutes from "./eventFoodMenuRoutes";
 import eventMediaRoutes from "./eventMediaRoutes";
@@ -37,6 +38,7 @@ import { createUploadMiddleware } from "../../../middlewares/uploadMiddleware";
 
 router.use("/", eventSpeakerRoutes);
 router.use("/", eventSponsorRoutes);
+router.use("/", eventPartnerRoutes);
 router.use("/", eventTimelineRoutes);
 router.use("/", eventMediaRoutes);
 router.use("/", eventFoodMenuRoutes);

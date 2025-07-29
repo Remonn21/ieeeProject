@@ -127,14 +127,16 @@ export const createForm = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { name, description, startDate, endDate, type, formFields, eventId } = req.body;
 
-    const event = await prisma.event.findUnique({
-      where: {
-        id: eventId,
-      },
-    });
+    if (eventId) {
+      const event = await prisma.event.findUnique({
+        where: {
+          id: eventId,
+        },
+      });
 
-    if (!event) {
-      return next(new AppError("event not found", 400));
+      if (!event) {
+        return next(new AppError("event not found", 400));
+      }
     }
 
     const form = await createCustomForm({
@@ -212,3 +214,5 @@ export const searchForms = catchAsync(
     });
   }
 );
+
+// export
