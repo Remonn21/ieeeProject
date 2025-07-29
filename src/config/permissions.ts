@@ -7,7 +7,7 @@ export const internalPermissions = [
   { permission: "event.show", group: "events" },
   { permission: "event.delete", group: "events" },
   { permission: "event.registration", group: "events" },
-  { permission: "event.create Form", group: "events" },
+  { permission: "event.createForm", group: "events" },
 
   { permission: "post.create", group: "posts" },
   { permission: "post.update", group: "posts" },

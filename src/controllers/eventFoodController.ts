@@ -253,6 +253,11 @@ export const deleteFoodMenu = catchAsync(
     });
 
     await prisma.foodMenu.delete({ where: { id: menuId } });
+
+    res.status(200).json({
+      status: "success",
+      message: "Food menu deleted successfully",
+    });
   }
 );
 

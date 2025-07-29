@@ -32,12 +32,14 @@ import eventSpeakerRoutes from "./eventSpeakerRoutes";
 import eventSponsorRoutes from "./eventSponsorRoutes";
 import eventPartnerRoutes from "./eventPartnerRoutes";
 import eventTimelineRoutes from "./eventTimelineRoutes";
+import eventFormRoutes from "./eventFormRoutes";
 import eventFoodMenuRoutes from "./eventFoodMenuRoutes";
 import eventMediaRoutes from "./eventMediaRoutes";
 import { createUploadMiddleware } from "../../../middlewares/uploadMiddleware";
 
 router.use("/", eventSpeakerRoutes);
 router.use("/", eventSponsorRoutes);
+router.use("/", eventFormRoutes);
 router.use("/", eventPartnerRoutes);
 router.use("/", eventTimelineRoutes);
 router.use("/", eventMediaRoutes);
