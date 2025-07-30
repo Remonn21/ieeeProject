@@ -13,7 +13,7 @@ export const createCommittee = catchAsync(
 
     console.log("HEADS", headIds);
 
-    const user = await prisma.user.findMany({
+    const user = await prisma.board.findMany({
       where: {
         id: {
           in: headIds,
@@ -21,8 +21,13 @@ export const createCommittee = catchAsync(
       },
     });
 
-    if (!user) {
-      return next(new AppError("User not found", 404));
+    if (user.length !== headIds) {
+      return next(
+        new AppError(
+          "Some leaders werent found, make sure that you provide a valid leader id",
+          404
+        )
+      );
     }
 
     const committee = await prisma.committee.create({
