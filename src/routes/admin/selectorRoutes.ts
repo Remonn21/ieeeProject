@@ -2,10 +2,14 @@ import { Router } from "express";
 
 import { authorizeRoles } from "../../middlewares/authroizeRoles";
 
-import { getSeasonSelector } from "../../controllers/selectorController";
+import {
+  getMembersSelector,
+  getSeasonSelector,
+} from "../../controllers/selectorController";
 
 const router = Router();
 
 router.get("/seasons", getSeasonSelector);
+router.get("/members", getMembersSelector);
 
 export default router;

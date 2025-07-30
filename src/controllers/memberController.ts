@@ -28,12 +28,12 @@ export const getMembers = catchAsync(
             mode: "insensitive",
           },
         },
-        {
-          committee: {
-            contains: search,
-            mode: "insensitive",
-          },
-        },
+        // {
+        //   committee: {
+        //     contains: search,
+        //     mode: "insensitive",
+        //   },
+        // },
       ];
     }
 
