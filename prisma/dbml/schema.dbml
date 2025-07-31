@@ -115,6 +115,7 @@ Table Committee {
   description String
   leaders Board [not null]
   topics Json
+  image String
   sessions Session [not null]
   members User [not null]
   files File [not null]

@@ -1,13 +1,22 @@
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { internalPermissions as internalPermissionsConfig } from "../src/config/permissions";
+import { prisma } from "../src/lib/prisma";
+import { copyLocalImageToUploads } from "../src/utils/handleNormalUpload";
+import { EventCategory, FameRank } from "@prisma/client";
+import path from "path";
 
+//seeded Data
+import boardData from "../Seed/board.json";
+import committeeData from "../Seed/committees.json";
+import faqData from "../Seed/faqs.json";
+import eventData from "../Seed/events.json";
+import partnerData from "../Seed/partners.json";
+import awardData from "../Seed/awards.json";
+import { isValid, parse } from "date-fns";
 type InternalPermission = {
   permission: string;
   group: string;
 };
-
-const prisma = new PrismaClient();
 
 async function main() {
   const adminEmail = process.env.DEFAULT_ADMIN_EMAIL as string;
@@ -135,6 +144,132 @@ async function main() {
   });
 
   console.log("✅ Admin user created:", user.email);
+
+  console.log("🌱 Seeding board members...");
+  // const userMap = new Map();
+
+  for (const member of boardData) {
+    const boardUser = await prisma.board.create({
+      data: {
+        name: member.name,
+        title: member.title,
+        position: member.position as FameRank,
+        image: member.image,
+        seasonId: newSeason.id,
+        socialLinks: member.socialLinks || [],
+      },
+    });
+    // userMap.set(member.userId, boardUser.id);
+  }
+
+  // console.log(userMap);
+
+  console.log("🌱 Seeding committees...");
+  for (const committee of committeeData) {
+    const imageUrl = await copyLocalImageToUploads(
+      path.join(__dirname, "..", "Seed", committee.image),
+      path.basename(committee.image),
+      {
+        folderName: "committees",
+        entityName: committee.name,
+      }
+    );
+
+    await prisma.committee.create({
+      data: {
+        name: committee.name,
+        description: committee.description,
+        image: imageUrl,
+        topics: committee.topics,
+        // leaders: {
+        //   connect: committee.headIds.map((id: string) => ({ id: userMap.get(id) })),
+        // },
+      },
+    });
+  }
+
+  console.log("🌱 Seeding events...");
+
+  for (const event of eventData) {
+    const startDateParsed = parse(event.startDate, "do MMMM yyyy", new Date());
+    const endDateParsed = parse(event.endDate, "do MMMM yyyy", new Date());
+
+    const eventDoc = await prisma.event.create({
+      data: {
+        coverImage: "",
+        seasonId: newSeason.id,
+        category: event.category as EventCategory,
+        name: event.name,
+        description: event.description,
+        startDate: startDateParsed,
+        endDate: endDateParsed,
+        location: event.location,
+        registrationStart: new Date(
+          new Date(startDateParsed).getTime() - 7 * 24 * 60 * 60 * 1000
+        ),
+        registrationEnd: startDateParsed,
+      },
+    });
+
+    const imageUrl = await copyLocalImageToUploads(
+      path.join(__dirname, "..", "Seed", event.image),
+      path.basename(event.image),
+      {
+        folderName: "events",
+        entityName: event.name,
+      }
+    );
+
+    await prisma.event.update({
+      where: {
+        id: eventDoc.id,
+      },
+      data: {
+        coverImage: imageUrl,
+      },
+    });
+  }
+
+  console.log("🌱 Seeding awards...");
+
+  for (const award of awardData) {
+    const dateParsed = parse(award.winningDate, "dd-MM-yyyy", new Date());
+
+    const awardDoc = await prisma.awards.create({
+      data: {
+        image: "",
+        title: award.title,
+        description: award.description,
+        winningDate: dateParsed,
+        place: award.place,
+      },
+    });
+
+    const imageUrl = await copyLocalImageToUploads(
+      path.join(__dirname, "..", "Seed", award.image),
+      path.basename(award.image),
+      {
+        folderName: "awards",
+        entityName: awardDoc.id,
+      }
+    );
+
+    await prisma.awards.update({
+      where: { id: awardDoc.id },
+      data: { image: imageUrl },
+    });
+  }
+
+  console.log("🌱 Seeding faqs...");
+
+  for (const faq of faqData) {
+    await prisma.fAQs.create({
+      data: {
+        question: faq.question,
+        answer: faq.answer,
+      },
+    });
+  }
 }
 
 main()

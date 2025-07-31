@@ -4,6 +4,8 @@ import { NextFunction, Request, Response } from "express";
 import AppError from "../utils/appError";
 import { prisma } from "../lib/prisma";
 import { getCurrentSeason } from "../lib/season";
+import { handleNormalUploads } from "../utils/handleNormalUpload";
+import { InputJsonValue } from "@prisma/client/runtime/library";
 
 export const createCommittee = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -12,6 +14,16 @@ export const createCommittee = catchAsync(
     const topicsArray = Array.isArray(topics) ? topics : JSON.parse(topics);
 
     console.log("HEADS", headIds);
+    console.log("body", req.body);
+
+    if (!req.file) {
+      return next(new AppError("Please provide a image file", 400));
+    }
+
+    const photosUrl = await handleNormalUploads([req.file] as Express.Multer.File[], {
+      folderName: "committees",
+      entityName: name,
+    });
 
     const user = await prisma.board.findMany({
       where: {
@@ -21,7 +33,7 @@ export const createCommittee = catchAsync(
       },
     });
 
-    if (user.length !== headIds) {
+    if (user.length !== headIds.length) {
       return next(
         new AppError(
           "Some leaders werent found, make sure that you provide a valid leader id",
@@ -34,6 +46,7 @@ export const createCommittee = catchAsync(
       data: {
         name,
         description,
+        image: photosUrl[0],
         topics: JSON.stringify(topicsArray),
         leaders: {
           connect: headIds.map((id: string) => ({ id })),
@@ -52,7 +65,7 @@ export const createCommittee = catchAsync(
 
 export const updateCommittee = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, description, topics, headId } = req.body;
+    const { name, description, topics, headIds } = req.body;
 
     let topicsArray = [];
 
@@ -66,25 +79,44 @@ export const updateCommittee = catchAsync(
       where: {
         id: committeeId,
       },
+      include: {
+        leaders: {
+          select: {
+            id: true,
+          },
+        },
+      },
     });
 
     if (!committe) {
       return next(new AppError("Committee not found", 404));
     }
 
-    await prisma.committee.update({
+    let photosUrl;
+
+    if (req.file) {
+      photosUrl = await handleNormalUploads([req.file] as Express.Multer.File[], {
+        folderName: "committees",
+        entityName: name,
+      });
+    }
+
+    const updatedData = await prisma.committee.update({
       where: {
         id: committeeId,
       },
       data: {
         name,
-        topics: topics ? JSON.stringify(topicsArray) : JSON.stringify(committe.topics),
+        topics: topics
+          ? JSON.stringify(topicsArray)
+          : (committe.topics as InputJsonValue),
         description,
-        leaders: {
-          connect: {
-            id: headId,
+        ...(headIds && {
+          leaders: {
+            set: headIds.map((id: string) => ({ id })),
           },
-        },
+        }),
+        image: photosUrl ? photosUrl[0] : committe.image,
       },
     });
 
@@ -95,7 +127,7 @@ export const updateCommittee = catchAsync(
     res.status(200).json({
       status: "success",
       data: {
-        committe,
+        committe: updatedData,
       },
     });
   }
@@ -126,7 +158,6 @@ export const getCommittees = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const currentSeason = await getCurrentSeason();
 
-    console.log(currentSeason);
     const [committees, count] = await prisma.$transaction([
       prisma.committee.findMany({
         include: {
@@ -152,11 +183,16 @@ export const getCommittees = catchAsync(
       prisma.committee.count(),
     ]);
 
+    const committeesJsonUnparsed = committees.map((com) => ({
+      ...com,
+      topics: typeof com.topics === "string" ? JSON.parse(com.topics) : com.topics,
+    }));
+
     res.status(200).json({
       status: "success",
       data: {
         total: count,
-        committees,
+        committees: committeesJsonUnparsed,
       },
     });
   }

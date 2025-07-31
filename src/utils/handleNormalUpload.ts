@@ -8,6 +8,32 @@ export type UploadOptions = {
   fileData?: boolean;
 };
 
+export async function copyLocalImageToUploads(
+  localPath: string,
+  fileName: string,
+  options: UploadOptions
+): Promise<string> {
+  const slugifiedEntityName = slugify(options.entityName);
+  const uploadsDir = path.join(
+    process.cwd(),
+    "uploads",
+    options.folderName,
+    slugifiedEntityName
+  );
+
+  await fs.mkdir(uploadsDir, { recursive: true });
+
+  const destination = path.join(uploadsDir, fileName);
+  await fs.copyFile(localPath, destination);
+
+  const relativePath = path
+    .join(options.folderName, slugifiedEntityName, fileName)
+    .replace(/\\\\/g, "/")
+    .replace(/\\/g, "/");
+
+  return `${process.env.BASE_STATIC_URL}/${relativePath}`;
+}
+
 export const handleNormalUploads = async (
   files: Express.Multer.File[],
   options: UploadOptions
