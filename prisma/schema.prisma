@@ -311,10 +311,10 @@ model EventSponsor {
   event   Event  @relation(fields: [eventId], references: [id])
   eventId String
 
-  sponsor   Sponsor @relation(fields: [sponsorId], references: [id])
+  sponsor   Sponsor @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
   sponsorId String
 
-  photo   SponsorPhoto @relation("SponsorPhoto_EventSponsor", fields: [photoId], references: [id])
+  photo   SponsorPhoto @relation("SponsorPhoto_EventSponsor", fields: [photoId], references: [id], onDelete: Cascade)
   photoId String
 
   @@unique([eventId, sponsorId])
@@ -325,10 +325,10 @@ model EventPartner {
   event   Event  @relation(fields: [eventId], references: [id])
   eventId String
 
-  sponsor   Sponsor @relation(fields: [sponsorId], references: [id])
+  sponsor   Sponsor @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
   sponsorId String
 
-  photo   SponsorPhoto @relation("SponsorPhoto_EventPartner", fields: [photoId], references: [id])
+  photo   SponsorPhoto @relation("SponsorPhoto_EventPartner", fields: [photoId], references: [id], onDelete: Cascade)
   photoId String
 
   @@unique([eventId, sponsorId])

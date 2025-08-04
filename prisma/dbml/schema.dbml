@@ -572,15 +572,15 @@ Ref: SponsorPhoto.sponsorId > Sponsor.id
 
 Ref: EventSponsor.eventId > Event.id
 
-Ref: EventSponsor.sponsorId > Sponsor.id
+Ref: EventSponsor.sponsorId > Sponsor.id [delete: Cascade]
 
-Ref: EventSponsor.photoId > SponsorPhoto.id
+Ref: EventSponsor.photoId > SponsorPhoto.id [delete: Cascade]
 
 Ref: EventPartner.eventId > Event.id
 
-Ref: EventPartner.sponsorId > Sponsor.id
+Ref: EventPartner.sponsorId > Sponsor.id [delete: Cascade]
 
-Ref: EventPartner.photoId > SponsorPhoto.id
+Ref: EventPartner.photoId > SponsorPhoto.id [delete: Cascade]
 
 Ref: EventDay.eventId > Event.id
 

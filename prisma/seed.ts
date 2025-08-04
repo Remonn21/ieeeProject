@@ -300,11 +300,21 @@ async function main() {
     }
 
     for (const sponsor of event.sponsors) {
-      const sponsorDoc = await prisma.sponsor.create({
-        data: {
+      const existing = await prisma.sponsor.findFirst({
+        where: {
           name: sponsor.name,
         },
       });
+
+      let sponsorDoc = existing;
+
+      if (!sponsorDoc) {
+        sponsorDoc = await prisma.sponsor.create({
+          data: {
+            name: sponsor.name,
+          },
+        });
+      }
 
       const sponsorImage = await copyLocalImageToUploads(
         path.join(__dirname, "..", "Seed", sponsor.image),

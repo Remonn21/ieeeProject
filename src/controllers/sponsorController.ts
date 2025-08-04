@@ -12,6 +12,47 @@ interface createSponsorOptions {
   isSeasonPartner?: boolean;
 }
 
+export const getSeasonSponsors = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const [sponsors, partners] = await Promise.all([
+      prisma.sponsor.findMany({
+        where: {
+          isSeasonSponsor: true,
+        },
+        include: {
+          images: {
+            select: {
+              id: true,
+              url: true,
+            },
+          },
+        },
+      }),
+      prisma.sponsor.findMany({
+        where: {
+          isSeasonPartner: true,
+        },
+        include: {
+          images: {
+            select: {
+              id: true,
+              url: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        sponsors,
+        partners,
+      },
+    });
+  }
+);
+
 export const createSponsorCore = async (options: createSponsorOptions) => {
   const { name, isSeasonSponsor, isSeasonPartner, image } = options;
 

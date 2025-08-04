@@ -9,6 +9,7 @@ import { getFaqs } from "../../controllers/faqController";
 import { getInsights } from "../../controllers/insightsController";
 import { getAwards } from "../../controllers/awardController";
 import { getCommittees } from "../../controllers/committeeController";
+import { getSeasonSponsors } from "../../controllers/sponsorController";
 
 const router = Router();
 
@@ -20,6 +21,8 @@ router.use("/events", eventRoutes);
 router.get("/faq", getFaqs);
 router.get("/insights", getInsights);
 router.get("/awards", getAwards);
+
+router.get("/sponsors", protect, getSeasonSponsors);
 
 router.get("/committees", getCommittees);
 
