@@ -54,7 +54,7 @@ export const getEventSponsors = catchAsync(
 export const addEventSponsor = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const { sponsorId, photoId, name, isSeasonSponsor } = req.body;
+    const { sponsorId, photoId, name, isSeasonSponsor, isSeasonPartner } = req.body;
 
     if (!id) {
       return next(new AppError("Event ID is required", 400));
@@ -82,7 +82,8 @@ export const addEventSponsor = catchAsync(
       newSponsor = await createSponsorCore({
         image: req.file as Express.Multer.File,
         name,
-        isSeasonSponsor: isSeasonSponsor ?? false,
+        isSeasonSponsor: isSeasonSponsor ?? "false",
+        isSeasonPartner: isSeasonPartner ?? "false",
       });
 
       chosenId = newSponsor.images.at(0)!.id;

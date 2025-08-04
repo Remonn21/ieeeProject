@@ -8,8 +8,8 @@ import { handleNormalUploads } from "../utils/handleNormalUpload";
 interface createSponsorOptions {
   name: string;
   image: Express.Multer.File;
-  isSeasonSponsor?: boolean;
-  isSeasonPartner?: boolean;
+  isSeasonSponsor?: string;
+  isSeasonPartner?: string;
 }
 
 export const getSeasonSponsors = catchAsync(
@@ -67,8 +67,8 @@ export const createSponsorCore = async (options: createSponsorOptions) => {
   const sponsor = await prisma.sponsor.create({
     data: {
       name,
-      isSeasonSponsor: !!isSeasonSponsor || false,
-      isSeasonPartner: !!isSeasonPartner || false,
+      isSeasonSponsor: isSeasonSponsor?.toLowerCase() === "true",
+      isSeasonPartner: isSeasonPartner?.toLowerCase() === "true",
     },
   });
 
@@ -105,6 +105,7 @@ export const createSponsor = catchAsync(
       name: req.body.name,
       image: req.file as Express.Multer.File,
       isSeasonSponsor: req.body.isSeasonSponsor,
+      isSeasonPartner: req.body.isSeasonPartner,
     });
 
     res.status(201).json({
@@ -116,13 +117,17 @@ export const createSponsor = catchAsync(
   }
 );
 
-export const addSponsorPhoto = catchAsync(
+export const updateSponsor = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const { caption } = req.body;
+    const { caption, name, isSeasonPartner, isSeasonSponsor } = req.body;
 
-    if (!req.file) {
-      return next(new AppError("Photo is required", 400));
+    let photoUrl;
+    if (req.file) {
+      photoUrl = await handleNormalUploads([req.file], {
+        entityName: `sponsor-${Date.now()}`,
+        folderName: `sponsors/${id}`,
+      });
     }
 
     const sponsor = await prisma.sponsor.findUnique({
@@ -133,19 +138,23 @@ export const addSponsorPhoto = catchAsync(
       return next(new AppError("sponsor not found", 404));
     }
 
-    const photoUrl = await handleNormalUploads([req.file], {
-      entityName: `sponsor-${Date.now()}`,
-      folderName: `sponsors/${id}`,
-    });
-
     const updatedSponsor = await prisma.sponsor.update({
       where: { id: id },
       data: {
-        images: {
-          create: {
-            url: photoUrl[0],
+        name: name ? name : sponsor.name,
+        isSeasonSponsor: isSeasonSponsor
+          ? isSeasonSponsor?.toLowerCase() === "true"
+          : sponsor.isSeasonSponsor,
+        isSeasonPartner: isSeasonPartner
+          ? isSeasonPartner?.toLowerCase() === "true"
+          : sponsor.isSeasonPartner,
+        ...(photoUrl && {
+          images: {
+            create: {
+              url: photoUrl[0],
+            },
           },
-        },
+        }),
       },
     });
 
@@ -243,11 +252,11 @@ export const deleteSponsor = catchAsync(
     if (!sponsor) {
       return next(new AppError("Sponsor not found", 404));
     }
-    await prisma.sponsor.delete({
-      where: { id },
-    });
     await prisma.sponsorPhoto.deleteMany({
       where: { sponsorId: id },
+    });
+    await prisma.sponsor.delete({
+      where: { id },
     });
     res.status(200).json({
       status: "success",

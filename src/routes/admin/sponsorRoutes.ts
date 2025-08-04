@@ -3,11 +3,11 @@ import { Router } from "express";
 import { createUploadMiddleware } from "../../middlewares/uploadMiddleware";
 import { checkPermission } from "../../middlewares/checkPermission";
 import {
-  addSponsorPhoto,
   createSponsor,
   deleteSponsor,
   getSponsorData,
   searchSponsors,
+  updateSponsor,
 } from "../../controllers/sponsorController";
 
 const router = Router();
@@ -20,7 +20,7 @@ router.get(
   searchSponsors
 );
 router.post("/", uploadImageFile, createSponsor);
-router.post("/:id/newphoto", uploadImageFile, addSponsorPhoto);
+router.patch("/:id", uploadImageFile, updateSponsor);
 router.delete("/:id", deleteSponsor);
 router.get("/:id", getSponsorData);
 

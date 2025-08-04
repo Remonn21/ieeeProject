@@ -22,7 +22,7 @@ router.get("/faq", getFaqs);
 router.get("/insights", getInsights);
 router.get("/awards", getAwards);
 
-router.get("/sponsors", protect, getSeasonSponsors);
+router.get("/sponsors", getSeasonSponsors);
 
 router.get("/committees", getCommittees);
 
