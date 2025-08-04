@@ -390,6 +390,16 @@ async function main() {
   console.log("🌱 Seeding sponsors...");
 
   for (const sponsor of partnerData) {
+    const existing = await prisma.sponsor.findFirst({
+      where: {
+        name: sponsor.name,
+      },
+    });
+
+    if (existing) {
+      continue;
+    }
+
     const sponsorDoc = await prisma.sponsor.create({
       data: {
         name: sponsor.name,
