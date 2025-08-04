@@ -285,28 +285,53 @@ model EventSpeaker {
   @@unique([eventId, speakerId])
 }
 
-model EventSponsor {
-  id        String       @id @default(uuid())
-  event     Event        @relation(fields: [eventId], references: [id])
-  eventId   String
-  sponsor   Sponsor      @relation(fields: [sponsorId], references: [id])
+model Sponsor {
+  id              String         @id @default(uuid())
+  name            String
+  isSeasonSponsor Boolean        @default(false)
+  isSeasonPartner Boolean        @default(false)
+  images          SponsorPhoto[]
+
+  eventsSponsored EventSponsor[]
+  eventsPartnered EventPartner[]
+}
+
+model SponsorPhoto {
+  id        String  @id @default(uuid())
+  sponsor   Sponsor @relation(fields: [sponsorId], references: [id])
   sponsorId String
-  photo     SponsorPhoto @relation(fields: [photoId], references: [id])
-  photoId   String
+  url       String
+
+  usedInSponsorship EventSponsor[] @relation("SponsorPhoto_EventSponsor")
+  usedInPartnership EventPartner[] @relation("SponsorPhoto_EventPartner")
+}
+
+model EventSponsor {
+  id      String @id @default(uuid())
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
+
+  sponsor   Sponsor @relation(fields: [sponsorId], references: [id])
+  sponsorId String
+
+  photo   SponsorPhoto @relation("SponsorPhoto_EventSponsor", fields: [photoId], references: [id])
+  photoId String
 
   @@unique([eventId, sponsorId])
 }
 
 model EventPartner {
-  id        String       @id @default(uuid())
-  event     Event        @relation(fields: [eventId], references: [id])
-  eventId   String
-  partner   Partner      @relation(fields: [partnerId], references: [id])
-  partnerId String
-  photo     PartnerPhoto @relation(fields: [photoId], references: [id])
-  photoId   String
+  id      String @id @default(uuid())
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
 
-  @@unique([eventId, partnerId])
+  sponsor   Sponsor @relation(fields: [sponsorId], references: [id])
+  sponsorId String
+
+  photo   SponsorPhoto @relation("SponsorPhoto_EventPartner", fields: [photoId], references: [id])
+  photoId String
+
+  @@unique([eventId, sponsorId])
 }
 
 model EventDay {
@@ -583,45 +608,6 @@ model Awards {
   image       String
   place       String
   description String
-}
-
-model Sponsor {
-  id              String         @id @default(uuid())
-  name            String
-  images          SponsorPhoto[]
-  eventsSponsored EventSponsor[]
-
-  isSeasonSponsor Boolean
-}
-
-model SponsorPhoto {
-  id        String  @id @default(uuid())
-  sponsor   Sponsor @relation(fields: [sponsorId], references: [id])
-  sponsorId String
-
-  photoUsedIn EventSponsor[]
-
-  url String
-}
-
-model Partner {
-  id     String         @id @default(uuid())
-  name   String
-  images PartnerPhoto[]
-
-  events EventPartner[]
-
-  isSeasonPartner Boolean
-}
-
-model PartnerPhoto {
-  id        String  @id @default(uuid())
-  partner   Partner @relation(fields: [partnerId], references: [id])
-  partnerId String
-
-  photoUsedIn EventPartner[]
-
-  url String
 }
 
 model FAQs {

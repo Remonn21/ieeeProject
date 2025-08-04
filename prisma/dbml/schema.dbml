@@ -198,6 +198,25 @@ Table EventSpeaker {
   }
 }
 
+Table Sponsor {
+  id String [pk]
+  name String [not null]
+  isSeasonSponsor Boolean [not null, default: false]
+  isSeasonPartner Boolean [not null, default: false]
+  images SponsorPhoto [not null]
+  eventsSponsored EventSponsor [not null]
+  eventsPartnered EventPartner [not null]
+}
+
+Table SponsorPhoto {
+  id String [pk]
+  sponsor Sponsor [not null]
+  sponsorId String [not null]
+  url String [not null]
+  usedInSponsorship EventSponsor [not null]
+  usedInPartnership EventPartner [not null]
+}
+
 Table EventSponsor {
   id String [pk]
   event Event [not null]
@@ -216,13 +235,13 @@ Table EventPartner {
   id String [pk]
   event Event [not null]
   eventId String [not null]
-  partner Partner [not null]
-  partnerId String [not null]
-  photo PartnerPhoto [not null]
+  sponsor Sponsor [not null]
+  sponsorId String [not null]
+  photo SponsorPhoto [not null]
   photoId String [not null]
 
   indexes {
-    (eventId, partnerId) [unique]
+    (eventId, sponsorId) [unique]
   }
 }
 
@@ -413,38 +432,6 @@ Table Awards {
   description String [not null]
 }
 
-Table Sponsor {
-  id String [pk]
-  name String [not null]
-  images SponsorPhoto [not null]
-  eventsSponsored EventSponsor [not null]
-  isSeasonSponsor Boolean [not null]
-}
-
-Table SponsorPhoto {
-  id String [pk]
-  sponsor Sponsor [not null]
-  sponsorId String [not null]
-  photoUsedIn EventSponsor [not null]
-  url String [not null]
-}
-
-Table Partner {
-  id String [pk]
-  name String [not null]
-  images PartnerPhoto [not null]
-  events EventPartner [not null]
-  isSeasonPartner Boolean [not null]
-}
-
-Table PartnerPhoto {
-  id String [pk]
-  partner Partner [not null]
-  partnerId String [not null]
-  photoUsedIn EventPartner [not null]
-  url String [not null]
-}
-
 Table FAQs {
   id String [pk]
   question String [not null]
@@ -581,6 +568,8 @@ Ref: EventSpeaker.speakerId > Speaker.id
 
 Ref: EventSpeaker.photoId > SpeakerPhoto.id
 
+Ref: SponsorPhoto.sponsorId > Sponsor.id
+
 Ref: EventSponsor.eventId > Event.id
 
 Ref: EventSponsor.sponsorId > Sponsor.id
@@ -589,9 +578,9 @@ Ref: EventSponsor.photoId > SponsorPhoto.id
 
 Ref: EventPartner.eventId > Event.id
 
-Ref: EventPartner.partnerId > Partner.id
+Ref: EventPartner.sponsorId > Sponsor.id
 
-Ref: EventPartner.photoId > PartnerPhoto.id
+Ref: EventPartner.photoId > SponsorPhoto.id
 
 Ref: EventDay.eventId > Event.id
 
@@ -638,9 +627,5 @@ Ref: SpeakerPhoto.speakerId > Speaker.id
 Ref: Post.authorId > User.id
 
 Ref: Post.seasonId > Season.id
-
-Ref: SponsorPhoto.sponsorId > Sponsor.id
-
-Ref: PartnerPhoto.partnerId > Partner.id
 
 Ref: File.committeeId > Committee.id

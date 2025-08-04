@@ -12,7 +12,7 @@ import speakerRoutes from "./speakerRoutes";
 import formRoutes from "./formRoutes";
 import awardRoutes from "./awardRoutes";
 import sponsorRoutes from "./sponsorRoutes";
-import partnerRoutes from "./partnerRoutes";
+// import partnerRoutes from "./partnerRoutes";
 import memberRoutes from "./memberRoutes";
 import seasonRoutes from "./seasonRoutes";
 import selectorRoutes from "./selectorRoutes";
@@ -36,7 +36,7 @@ router.use("/forms", formRoutes);
 router.use("/faq", faqRoutes);
 router.use("/insights", insightRoutes);
 router.use("/awards", awardRoutes);
-router.use("/partners", partnerRoutes);
+// router.use("/partners", partnerRoutes);
 router.use("/sponsors", sponsorRoutes);
 
 // app.use("/users", userRoutes);

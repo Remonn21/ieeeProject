@@ -119,7 +119,16 @@ export const getEventDetails = catchAsync(
         },
         eventDays: {
           include: {
-            agendaItems: true,
+            agendaItems: {
+              include: {
+                speaker: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
           },
         },
       },

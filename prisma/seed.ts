@@ -13,6 +13,7 @@ import eventData from "../Seed/events.json";
 import partnerData from "../Seed/partners.json";
 import awardData from "../Seed/awards.json";
 import { isValid, parse } from "date-fns";
+import { title } from "process";
 type InternalPermission = {
   permission: string;
   group: string;
@@ -159,6 +160,24 @@ async function main() {
         socialLinks: member.socialLinks || [],
       },
     });
+
+    const imageUrl = await copyLocalImageToUploads(
+      path.join(__dirname, "..", "Seed", member.image),
+      path.basename(member.image),
+      {
+        folderName: "board",
+        entityName: boardUser.id,
+      }
+    );
+
+    await prisma.board.update({
+      where: {
+        id: boardUser.id,
+      },
+      data: {
+        image: imageUrl,
+      },
+    });
     // userMap.set(member.userId, boardUser.id);
   }
 
@@ -219,6 +238,114 @@ async function main() {
         entityName: event.name,
       }
     );
+    const speakers: any = [];
+    const sponsors: any = [];
+    for (const speaker of event.speakers) {
+      const existing = await prisma.speaker.findUnique({
+        where: {
+          name: speaker.name,
+        },
+      });
+
+      let speakerDoc = existing;
+
+      if (!speakerDoc) {
+        speakerDoc = await prisma.speaker.create({
+          data: {
+            name: speaker.name,
+
+            title: speaker.title,
+            socialLinks: speaker.socialLinks || null,
+          },
+        });
+      }
+
+      const speakerImage = await copyLocalImageToUploads(
+        path.join(__dirname, "..", "Seed", speaker.image),
+        path.basename(speaker.image),
+        {
+          folderName: "speakers",
+          entityName: speakerDoc.id,
+        }
+      );
+
+      const updatedSpeaker = await prisma.speaker.update({
+        where: {
+          id: speakerDoc.id,
+        },
+        data: {
+          images: {
+            create: {
+              url: speakerImage,
+            },
+          },
+        },
+        include: {
+          images: true,
+        },
+      });
+
+      const speakerPhoto = updatedSpeaker.images.at(-1);
+      if (!speakerPhoto) {
+        throw new Error(`No photo found for speaker ${speakerDoc.id}`);
+      }
+
+      await prisma.eventSpeaker.create({
+        data: {
+          eventId: eventDoc.id,
+          speakerId: speakerDoc.id,
+          photoId: speakerPhoto.id,
+        },
+      });
+    }
+
+    for (const sponsor of event.sponsors) {
+      const sponsorDoc = await prisma.sponsor.create({
+        data: {
+          name: sponsor.name,
+        },
+      });
+
+      const sponsorImage = await copyLocalImageToUploads(
+        path.join(__dirname, "..", "Seed", sponsor.image),
+        path.basename(sponsor.image),
+        {
+          folderName: "sponsors",
+          entityName: sponsorDoc.id,
+        }
+      );
+
+      const updatedSponsor = await prisma.sponsor.update({
+        where: {
+          id: sponsorDoc.id,
+        },
+        data: {
+          images: {
+            create: {
+              url: sponsorImage,
+            },
+          },
+        },
+        include: {
+          images: true,
+        },
+      });
+
+      const sponsorPhoto = updatedSponsor.images[0];
+      if (!sponsorPhoto) {
+        throw new Error(`No photo found for sponsor ${sponsorDoc.id}`);
+      }
+
+      await prisma.eventSponsor.create({
+        data: {
+          eventId: eventDoc.id,
+          sponsorId: sponsorDoc.id,
+          photoId: sponsorPhoto.id,
+        },
+      });
+
+      sponsors.push(updatedSponsor);
+    }
 
     await prisma.event.update({
       where: {
@@ -257,6 +384,36 @@ async function main() {
     await prisma.awards.update({
       where: { id: awardDoc.id },
       data: { image: imageUrl },
+    });
+  }
+
+  console.log("🌱 Seeding sponsors...");
+
+  for (const sponsor of partnerData) {
+    const sponsorDoc = await prisma.sponsor.create({
+      data: {
+        name: sponsor.name,
+      },
+    });
+
+    const imageUrl = await copyLocalImageToUploads(
+      path.join(__dirname, "..", "Seed", sponsor.image),
+      path.basename(sponsor.image),
+      {
+        folderName: "sponsors",
+        entityName: sponsorDoc.id,
+      }
+    );
+
+    await prisma.sponsor.update({
+      where: { id: sponsorDoc.id },
+      data: {
+        images: {
+          create: {
+            url: imageUrl,
+          },
+        },
+      },
     });
   }
 

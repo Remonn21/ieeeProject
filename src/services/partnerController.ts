@@ -19,7 +19,7 @@ export const createPartnerCore = async (options: createPartnerOptions) => {
     throw new AppError("Photo is required", 400);
   }
 
-  const partner = await prisma.partner.create({
+  const partner = await prisma.sponsor.create({
     data: {
       name,
       isSeasonPartner: !!isSeasonPartner || false,
@@ -31,7 +31,7 @@ export const createPartnerCore = async (options: createPartnerOptions) => {
     folderName: `partners/${partner.id}`,
   });
 
-  const updatedPartner = await prisma.partner.update({
+  const updatedPartner = await prisma.sponsor.update({
     where: { id: partner.id },
     data: {
       images: {

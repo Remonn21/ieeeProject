@@ -51,7 +51,9 @@ export const createSession = catchAsync(
     const { name, description, committeId, createdAt, startedAt } = req.body;
 
     const selectcommitteId =
-      req.user?.role !== "EXCOM" ? committeId : req.user?.committeeId;
+      req.user?.seasonMemberships[0].role !== "EXCOM"
+        ? committeId
+        : req.user?.committeeId;
 
     const committe = await prisma.committee.findUnique({
       where: { id: selectcommitteId },
@@ -59,17 +61,6 @@ export const createSession = catchAsync(
 
     if (!committe) {
       return next(new AppError("Committee not found", 404));
-    }
-
-    if (committe.headId !== req?.user?.id) {
-      if (req.user?.role !== "EXCOM") {
-        return next(
-          new AppError(
-            "You are not authorized to create a session for this committee",
-            403
-          )
-        );
-      }
     }
 
     const uploadedImages = await handleNormalUploads(req.files as Express.Multer.File[], {
@@ -111,14 +102,22 @@ export const updateSession = catchAsync(
       include: {
         committee: {
           select: {
-            headId: true,
+            leaders: {
+              select: {
+                id: true,
+              },
+            },
           },
         },
       },
     });
 
-    if (session?.committee.headId !== req?.user?.id) {
-      if (req.user?.role !== "EXCOM") {
+    if (
+      !session?.committee.leaders
+        .map((leader) => leader.id)
+        .includes(req?.user?.id as string)
+    ) {
+      if (req.user?.seasonMemberships[0].role !== "EXCOM") {
         return next(
           new AppError(
             "You are not authorized to create a session for this committee",
@@ -156,14 +155,24 @@ export const deleteSession = catchAsync(
       include: {
         committee: {
           select: {
-            headId: true,
+            leaders: {
+              select: {
+                id: true,
+              },
+            },
           },
         },
       },
     });
 
-    if (session?.committee.headId !== req?.user?.id) {
-      if (req.user?.role !== "EXCOM") {
+    // TODO:FIX IT AND MAKE IT BASED ON SEASON LEADERS
+
+    if (
+      !session?.committee.leaders
+        .map((leader) => leader.id)
+        .includes(req?.user?.id as string)
+    ) {
+      if (req.user?.seasonMemberships[0].role !== "EXCOM") {
         return next(
           new AppError(
             "You are not authorized to create a session for this committee",

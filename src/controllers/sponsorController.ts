@@ -4,16 +4,16 @@ import { NextFunction, Request, Response } from "express";
 import AppError from "../utils/appError";
 import { prisma } from "../lib/prisma";
 import { handleNormalUploads } from "../utils/handleNormalUpload";
-import { options } from "sanitize-html";
 
 interface createSponsorOptions {
   name: string;
   image: Express.Multer.File;
   isSeasonSponsor?: boolean;
+  isSeasonPartner?: boolean;
 }
 
 export const createSponsorCore = async (options: createSponsorOptions) => {
-  const { name, isSeasonSponsor, image } = options;
+  const { name, isSeasonSponsor, isSeasonPartner, image } = options;
 
   if (!name) {
     throw new AppError("Sponsor name is required", 400);
@@ -27,6 +27,7 @@ export const createSponsorCore = async (options: createSponsorOptions) => {
     data: {
       name,
       isSeasonSponsor: !!isSeasonSponsor || false,
+      isSeasonPartner: !!isSeasonPartner || false,
     },
   });
 

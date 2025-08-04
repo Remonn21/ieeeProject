@@ -19,7 +19,7 @@ export const getEventPartners = catchAsync(
         eventId: id,
       },
       include: {
-        partner: {
+        sponsor: {
           include: {
             images: {
               select: {
@@ -35,8 +35,8 @@ export const getEventPartners = catchAsync(
     const eventPartnersMapped = eventPartners.map((partner) => ({
       ...partner,
       partner: {
-        ...partner.partner,
-        images: partner.partner.images.find((image) => image.id === partner.photoId),
+        ...partner.sponsor,
+        images: partner.sponsor.images.find((image) => image.id === partner.photoId),
       },
     }));
 
@@ -96,7 +96,7 @@ export const addEventPartner = catchAsync(
           );
         }
 
-        const partner = await prisma.partner.findUnique({
+        const partner = await prisma.sponsor.findUnique({
           where: {
             id: partnerId,
           },
@@ -121,7 +121,7 @@ export const addEventPartner = catchAsync(
           })
         )[0];
 
-        const updatedPartner = await prisma.partner.update({
+        const updatedPartner = await prisma.sponsor.update({
           where: {
             id: partnerId,
           },
@@ -148,7 +148,7 @@ export const addEventPartner = catchAsync(
     await prisma.eventPartner.create({
       data: {
         eventId: id,
-        partnerId: newPartner ? newPartner.id : partnerId,
+        sponsorId: newPartner ? newPartner.id : partnerId,
         photoId: chosenId,
       },
     });
@@ -168,9 +168,9 @@ export const updateEventPartner = catchAsync(
     let updatedPartner;
 
     const eventPartner = await prisma.eventPartner.findUnique({
-      where: { eventId_partnerId: { eventId: id, partnerId: partnerId } },
+      where: { eventId_sponsorId: { eventId: id, sponsorId: partnerId } },
       include: {
-        partner: {
+        sponsor: {
           include: {
             images: {
               select: {
@@ -188,7 +188,7 @@ export const updateEventPartner = catchAsync(
     }
 
     if (name) {
-      updatedPartner = await prisma.partner.update({
+      updatedPartner = await prisma.sponsor.update({
         where: { id: partnerId },
         data: {
           name: name,
@@ -204,7 +204,7 @@ export const updateEventPartner = catchAsync(
         folderName: `partners/${id}`,
       });
 
-      updatedPartner = await prisma.partner.update({
+      updatedPartner = await prisma.sponsor.update({
         where: { id: partnerId },
         data: {
           images: {
@@ -225,9 +225,9 @@ export const updateEventPartner = catchAsync(
 
       await prisma.eventPartner.update({
         where: {
-          eventId_partnerId: {
+          eventId_sponsorId: {
             eventId: id,
-            partnerId: partnerId,
+            sponsorId: partnerId,
           },
         },
         data: {
@@ -271,7 +271,7 @@ export const deleteEventPartner = catchAsync(
     await prisma.eventPartner.deleteMany({
       where: {
         eventId: eventId,
-        partnerId: partnerId,
+        sponsorId: partnerId,
       },
     });
 
