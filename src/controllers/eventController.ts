@@ -96,6 +96,7 @@ export const getEventDetails = catchAsync(
                 },
               }
             : false,
+        gallery: true,
         speakers: {
           select: {
             photo: {

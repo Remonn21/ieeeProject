@@ -25,7 +25,19 @@ const baseCommitteeSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
   topics: topicsSchema,
-  headIds: z.array(z.string().min(1)).min(1, "At least one head ID is required"),
+  headIds: z.preprocess(
+    (val) => {
+      if (typeof val === "string") {
+        try {
+          return JSON.parse(val);
+        } catch {
+          return undefined;
+        }
+      }
+      return val;
+    },
+    z.array(z.string()).min(1, "At least one head is required")
+  ),
 });
 
 export const createCommitteeSchema = baseCommitteeSchema;
