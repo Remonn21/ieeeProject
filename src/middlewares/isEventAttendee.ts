@@ -8,6 +8,8 @@ export const isAcceptedForEventAccess = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.user?.id;
 
+    const user = req.user;
+
     const { eventId } = req.params;
 
     const registration = await prisma.eventRegistration.findFirst({
@@ -18,7 +20,7 @@ export const isAcceptedForEventAccess = catchAsync(
       },
     });
 
-    if (!registration) {
+    if (!registration && !user?.internalRoleId) {
       return next(
         new AppError(
           "Access denied. You must be registered and accepted for this event.",

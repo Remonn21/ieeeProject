@@ -232,7 +232,8 @@ model Event {
 
   category EventCategory
 
-  location String?
+  location     String?
+  locationLink String?
 
   registrations EventRegistration[]
 

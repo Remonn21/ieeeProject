@@ -160,6 +160,7 @@ Table Event {
   updatedAt DateTime [default: `now()`, not null]
   category EventCategory [not null]
   location String
+  locationLink String
   registrations EventRegistration [not null]
   forms CustomForm [not null]
   registrationForm CustomForm
@@ -612,15 +613,15 @@ Ref: EventRegistration.submissionId - CustomFormSubmission.id
 
 Ref: CustomForm.eventId > Event.id
 
-Ref: CustomFormField.formId > CustomForm.id
+Ref: CustomFormField.formId > CustomForm.id [delete: Cascade]
 
-Ref: CustomFormSubmission.formId > CustomForm.id
+Ref: CustomFormSubmission.formId > CustomForm.id [delete: Cascade]
 
 Ref: CustomFormSubmission.userId > User.id
 
-Ref: CustomFormResponse.fieldId > CustomFormField.id
+Ref: CustomFormResponse.fieldId > CustomFormField.id [delete: Cascade]
 
-Ref: CustomFormResponse.submissionId > CustomFormSubmission.id
+Ref: CustomFormResponse.submissionId > CustomFormSubmission.id [delete: Cascade]
 
 Ref: SpeakerPhoto.speakerId > Speaker.id
 

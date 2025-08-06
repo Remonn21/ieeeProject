@@ -14,6 +14,7 @@ import { imageUrlToBase64 } from "../utils/imageUrlToBase64";
 import { parseHtmlTemplate } from "../utils/parseHtmlTemplate";
 import { format } from "date-fns";
 import { getCurrentSeason } from "../lib/season";
+import { start } from "repl";
 
 const generateRandomPassword = (length = 10) => {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -167,7 +168,14 @@ export const getEventRegistration = catchAsync(
 
     res.status(200).json({
       status: "success",
-      data: [...(event.registrationForm?.fields as Array<any>)],
+      data: {
+        fields: [...(event.registrationForm?.fields as Array<any>)],
+        coverImage: event.coverImage,
+        registrationStart: event.registrationForm?.startDate,
+        registrationEnd: event.registrationForm?.endDate,
+        name: event.registrationForm?.name,
+        description: event.registrationForm?.description,
+      },
     });
   }
 );

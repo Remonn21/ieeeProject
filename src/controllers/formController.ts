@@ -156,6 +156,68 @@ export const createForm = catchAsync(
   }
 );
 
+export const updateForm = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const { name, description, startDate, endDate, type, fields } = req.body;
+    const form = await prisma.customForm.findUnique({
+      where: { id },
+    });
+
+    if (!form) {
+      return next(new AppError("Form not found", 404));
+    }
+    if (!allowedFormTypes.includes(type)) {
+      return next(new AppError("Invalid form type", 400));
+    }
+
+    if (form.isRegistrationForm) {
+      const requiredFields = fields.filter(
+        (field: any) => field.name === "email" || field.name === "phone"
+      );
+      if (requiredFields.length < 2) {
+        return next(
+          new AppError("Registration forms must have 'email' and 'name' field", 400)
+        );
+      }
+    }
+    const updatedFields = fields.map((field: any) => {
+      if (!allowedFieldTypes.includes(field.type.toUpperCase())) {
+        throw new AppError("Invalid field type", 400);
+      }
+      return {
+        label: field.label,
+        name: field.name,
+        required: field.required ?? false,
+        min: field.min ?? null,
+        max: field.max ?? null,
+        placeholder: field.placeholder,
+        options: field.options,
+        type: field.type.toUpperCase(),
+      };
+    });
+
+    const updatedForm = await prisma.customForm.update({
+      where: { id },
+      data: {
+        name,
+        startDate,
+        endDate,
+        description: cleanHtml(description),
+        type: type.toUpperCase() as FormType,
+        fields: {
+          update: updatedFields,
+        },
+      },
+    });
+
+    res.status(200).json({
+      status: "success",
+      data: updatedForm,
+    });
+  }
+);
+
 export const getFormDetails = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;

@@ -14,6 +14,11 @@ export const getEventForms = catchAsync(
         eventId: id,
       },
       include: {
+        responses: {
+          select: {
+            id: true,
+          },
+        },
         fields: true,
       },
     });

@@ -369,6 +369,7 @@ export const createEvent = catchAsync(
       registrationStart,
       registrationEnd,
       location,
+      locationLink,
     } = req.body;
 
     if (!req.file) {
@@ -392,6 +393,7 @@ export const createEvent = catchAsync(
         },
         category,
         location,
+        locationLink,
       },
       include: {
         eventDays: {
