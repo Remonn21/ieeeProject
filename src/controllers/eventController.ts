@@ -86,7 +86,16 @@ export const getEventDetails = catchAsync(
     const event = await prisma.event.findUnique({
       where: { id: id },
       include: {
-        registrations: isPrivileged ? true : false,
+        registrations: isPrivileged
+          ? true
+          : user
+            ? {
+                where: {
+                  status: "accepted",
+                  userId: user.id,
+                },
+              }
+            : false,
         speakers: {
           select: {
             photo: {
@@ -140,6 +149,7 @@ export const getEventDetails = catchAsync(
 
     const eventMapped = {
       ...event,
+      isAttende: isPrivileged ? true : event.registrations.length > 0,
       speakers: event?.speakers.map((s) => ({
         name: s.speaker.name,
         photo: s.photo?.url,
@@ -416,8 +426,9 @@ export const createEvent = catchAsync(
         name: event.name,
         type: "EVENT",
         description: "Event registration form",
-        formFields: eventFormFields,
+        fields: eventFormFields,
         eventId: event.id,
+        isRegistrationForm: true,
         startDate: event.registrationStart,
         endDate: event.registrationEnd,
       }),

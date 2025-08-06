@@ -10,20 +10,6 @@ export const isAcceptedForEventAccess = catchAsync(
 
     const { eventId } = req.params;
 
-    // if (!eventId && req.body.menuId) {
-    //   const menu = await prisma.foodMenu.findUnique({
-    //     where: { id: req.body.menuId },
-    //   });
-    //   if (!menu) {
-    //     return next(new AppError("Invalid food menu", 400));
-    //   }
-    //   eventId = menu.eventId;
-    // }
-
-    // if (!eventId) {
-    //   return next(new AppError("Event ID is required for this action", 400));
-    // }
-
     const registration = await prisma.eventRegistration.findFirst({
       where: {
         userId,

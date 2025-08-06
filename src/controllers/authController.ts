@@ -117,10 +117,21 @@ export const login = catchAsync(
       return next(new AppError("Please provide email and password", 400));
     }
 
+    const currentSeason = await getCurrentSeason();
+
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
         committee: true,
+        seasonMemberships: {
+          where: {
+            seasonId: currentSeason.id,
+          },
+          // select: {
+          //   role: true,
+          //   joinedAt: true,
+          // },
+        },
         internalRole: {
           include: {
             permissions: {
@@ -223,7 +234,8 @@ export const checkAuth = (req: Request, res: Response) => {
         id: req.user?.id,
         name: req.user?.name,
         joinedIn: req.user?.seasonMemberships?.at(-1)?.joinedAt,
-
+        role: req.user?.seasonMemberships?.at(-1)?.role,
+        permissions: req.user?.internalRole?.permissions.map((p) => p.permission.name),
         committee: req.user?.committee ? req.user?.committee?.name : "No Committee",
         email: req.user?.email,
         phone: req.user?.phone,

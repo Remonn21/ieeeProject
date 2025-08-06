@@ -8,6 +8,7 @@ import { prisma } from "../../lib/prisma";
 export const getEventForms = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
+
     const forms = await prisma.customForm.findMany({
       where: {
         eventId: id,

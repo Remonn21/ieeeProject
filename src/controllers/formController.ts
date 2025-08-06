@@ -41,7 +41,7 @@ type createCustomFormParams = {
   type: FormType;
   startDate: Date;
   endDate: Date;
-  formFields: FormFieldInput[];
+  fields: FormFieldInput[];
   eventId?: string;
   isRegistrationForm?: boolean;
 };
@@ -52,7 +52,7 @@ export const createCustomForm = async ({
   startDate,
   endDate,
   type,
-  formFields,
+  fields,
   eventId,
   isRegistrationForm = false,
 }: createCustomFormParams) => {
@@ -69,8 +69,8 @@ export const createCustomForm = async ({
     throw new AppError("A form already exists with this name", 400);
   }
 
-  const fields = [
-    ...formFields.map((field: any) => {
+  const formFields = [
+    ...fields.map((field: any) => {
       if (!allowedFieldTypes.includes(field.type.toUpperCase())) {
         throw new AppError("Invalid field type", 400);
       }
@@ -100,7 +100,7 @@ export const createCustomForm = async ({
       ...(eventId && { event: { connect: { id: eventId } } }),
       ...(isRegistrationForm && { registrationFor: { connect: { id: eventId } } }),
       fields: {
-        create: fields,
+        create: formFields,
       },
     },
   });
@@ -125,7 +125,7 @@ export const createCustomForm = async ({
 
 export const createForm = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, description, startDate, endDate, type, formFields, eventId } = req.body;
+    const { name, description, startDate, endDate, type, fields, eventId } = req.body;
 
     if (eventId) {
       const event = await prisma.event.findUnique({
@@ -146,7 +146,7 @@ export const createForm = catchAsync(
       endDate: new Date(endDate),
       ...(eventId && { eventId }),
       type,
-      formFields,
+      fields,
     });
 
     res.status(200).json({
@@ -211,6 +211,28 @@ export const searchForms = catchAsync(
         ...(paginated === "true" && { page }),
         ...(paginated === "true" && { pages: Math.ceil(total / limit) }),
       },
+    });
+  }
+);
+
+export const deleteForm = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    const form = await prisma.customForm.findUnique({
+      where: { id },
+    });
+
+    if (!form) {
+      return next(new AppError("Form not found", 404));
+    }
+
+    if (form.isRegistrationForm) {
+      return next(new AppError("Cannot delete a registration form", 400));
+    }
+
+    await prisma.customForm.delete({
+      where: { id },
     });
   }
 );

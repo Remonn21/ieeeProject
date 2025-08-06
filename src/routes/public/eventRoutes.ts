@@ -11,15 +11,22 @@ import {
   getFoodMenusForEvent,
   submitFoodOrder,
 } from "../../controllers/eventFoodController";
+import { getEventForms } from "../../controllers/Event/FormController";
 
 const router = Router();
 
 router.get("/", getEvents);
 router.get("/:id", getEventDetails);
+router.get("/:eventId/forms", protect, isAcceptedForEventAccess, getEventForms);
 router.get("/:id/register", getEventRegistration);
 router.post("/:id/register", optionalAuth, registerToEvent);
 
-router.get("/:id/food-menu", protect, isAcceptedForEventAccess, getFoodMenusForEvent);
-router.post("/:id/order-food", protect, isAcceptedForEventAccess, submitFoodOrder);
+router.get(
+  "/:eventId/food-menu",
+  protect,
+  isAcceptedForEventAccess,
+  getFoodMenusForEvent
+);
+router.post("/:eventId/order-food", protect, isAcceptedForEventAccess, submitFoodOrder);
 
 export default router;

@@ -523,14 +523,14 @@ model CustomFormField {
   pattern     String? //for custom validations (regex) for text and email
   options     String[]
 
-  form      CustomForm?          @relation(fields: [formId], references: [id])
+  form      CustomForm?          @relation(fields: [formId], references: [id], onDelete: Cascade)
   formId    String?
   responses CustomFormResponse[]
 }
 
 model CustomFormSubmission {
   id     String     @id @default(uuid())
-  form   CustomForm @relation(fields: [formId], references: [id])
+  form   CustomForm @relation(fields: [formId], references: [id], onDelete: Cascade)
   formId String
 
   user   User?   @relation(fields: [userId], references: [id])
@@ -545,10 +545,10 @@ model CustomFormSubmission {
 model CustomFormResponse {
   id      String          @id @default(uuid())
   value   String
-  field   CustomFormField @relation(fields: [fieldId], references: [id])
+  field   CustomFormField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
   fieldId String
 
-  submission   CustomFormSubmission @relation(fields: [submissionId], references: [id])
+  submission   CustomFormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   submissionId String
 }
 
