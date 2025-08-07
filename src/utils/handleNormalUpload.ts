@@ -36,13 +36,14 @@ export async function copyLocalImageToUploads(
 
 export const handleNormalUploads = async (
   files: Express.Multer.File[],
-  options: UploadOptions
+  options: UploadOptions,
+  isPrivate: boolean = false
 ): Promise<any[]> => {
   const slugifiedEntityName = slugify(options.entityName);
 
   const basePath = path.join(
     process.cwd(),
-    "uploads",
+    isPrivate ? "private" : "uploads",
     options.folderName,
     slugifiedEntityName
   );

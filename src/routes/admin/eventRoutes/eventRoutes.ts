@@ -21,7 +21,6 @@ import {
 } from "../../../controllers/eventRegistrationController";
 import {
   createFoodMenu,
-  getEventFoodOrders,
   getFoodMenusForEvent,
   updateFoodMenu,
 } from "../../../controllers/eventFoodController";
@@ -34,6 +33,7 @@ import eventPartnerRoutes from "./eventPartnerRoutes";
 import eventTimelineRoutes from "./eventTimelineRoutes";
 import eventFormRoutes from "./eventFormRoutes";
 import eventFoodMenuRoutes from "./eventFoodMenuRoutes";
+import eventFoodOrderRoutes from "./foodOrderRoutes";
 import eventMediaRoutes from "./eventMediaRoutes";
 import { createUploadMiddleware } from "../../../middlewares/uploadMiddleware";
 
@@ -44,6 +44,7 @@ router.use("/", eventPartnerRoutes);
 router.use("/", eventTimelineRoutes);
 router.use("/", eventMediaRoutes);
 router.use("/", eventFoodMenuRoutes);
+router.use("/", eventFoodOrderRoutes);
 
 router.get("/:id/registers", getEventRegisteredUsers);
 router.get("/:eventId/attendees", getEventAttendanceStats);
@@ -52,18 +53,18 @@ router.get("/responses/:responseId", getRegisterResponseDetails);
 router.get("/responses/:responseId/accept-user", acceptEventRegistration);
 
 // food orders
-router.get("/:eventId/food-orders", getEventFoodOrders);
 
 router.use(authorizeRoles("EXCOM"));
 
-const uploadImageFile = createUploadMiddleware("temp").single("image");
+const uploadImageFile = createUploadMiddleware("temp").fields([
+  { name: "coverImage", maxCount: 1 },
+  { name: "eventVideo", maxCount: 1 },
+]);
 
 router.get("/", getEvents);
 router.post("/", uploadImageFile, validate(createEventSchema), createEvent);
 router.patch("/:id", uploadImageFile, validate(updateEventSchema), updateEventEssentials);
-// router.post("/:id/essentials", createEventEssentials);
-// router.patch("/:id", updateCommittee);
-// router.delete("/:id", deleteCommittee);
+
 router.get("/:id", getEventDetails);
 
 export default router;

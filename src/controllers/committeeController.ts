@@ -167,6 +167,8 @@ export const getCommittees = catchAsync(
             },
             select: {
               name: true,
+              id: true,
+              socialLinks: true,
               image: true,
               title: true,
             },

@@ -25,7 +25,9 @@ export const getEventForms = catchAsync(
 
     res.status(200).json({
       status: "success",
-      data: { forms },
+      data: {
+        forms: forms.map((form) => ({ ...form, responsesCount: form.responses.length })),
+      },
     });
   }
 );

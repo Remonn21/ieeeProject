@@ -299,4 +299,56 @@ export const deleteForm = catchAsync(
   }
 );
 
-// export
+export const getFormResponses = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const form = await prisma.customForm.findUnique({
+      where: { id },
+      include: {
+        fields: true,
+        responses: {
+          include: {
+            responses: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!form) {
+      return next(new AppError("Form not found", 404));
+    }
+
+    const mappedResponses = form.responses.map((response) => {
+      const responseData: any = {};
+      form.fields.forEach((field) => {
+        responseData[field.name] = response.responses.find(
+          (res) => res.fieldId === field.id
+        );
+      });
+      return {
+        ...responseData,
+        id: response.id,
+        user: response.user,
+        // createdAt: response.createdAt,
+      };
+    });
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        form: {
+          ...form,
+          fields: null,
+          responses: mappedResponses,
+        },
+      },
+    });
+  }
+);

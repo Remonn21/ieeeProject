@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 
 import AppError from "../utils/appError";
 import { prisma } from "../lib/prisma";
-import { handleNormalUploads } from "../utils/handleNormalUpload";
+import { deleteUploadedFiles, handleNormalUploads } from "../utils/handleNormalUpload";
 import { Speaker } from "@prisma/client";
 import { createCustomForm } from "./formController";
 import { getCurrentSeason } from "../lib/season";
@@ -150,7 +150,7 @@ export const getEventDetails = catchAsync(
 
     const eventMapped = {
       ...event,
-      isAttende: isPrivileged ? true : event.registrations.length > 0,
+      isAttende: isPrivileged ? true : event?.registrations?.length > 0,
       speakers: event?.speakers.map((s) => ({
         name: s.speaker.name,
         photo: s.photo?.url,
@@ -372,7 +372,12 @@ export const createEvent = catchAsync(
       locationLink,
     } = req.body;
 
-    if (!req.file) {
+    const files = req.files as {
+      coverImage?: Express.Multer.File[];
+      eventVideo?: Express.Multer.File[];
+    };
+
+    if (!files || !files.coverImage || files.coverImage.length === 0) {
       return next(new AppError("Event image is required", 400));
     }
 
@@ -420,11 +425,17 @@ export const createEvent = catchAsync(
       required: true,
     });
 
-    const [eventImage, form] = await Promise.all([
-      handleNormalUploads([req.file], {
-        entityName: `event-${event.id}`,
+    const [eventImage, eventVideo, form] = await Promise.all([
+      handleNormalUploads([files.coverImage[0] as Express.Multer.File], {
+        entityName: `event-${event.id}/media`,
         folderName: "events",
       }),
+      files.eventVideo
+        ? handleNormalUploads([files.eventVideo[0] as Express.Multer.File], {
+            entityName: `event-${event.id}/media`,
+            folderName: "events",
+          })
+        : null,
       createCustomForm({
         name: event.name,
         type: "EVENT",
@@ -446,6 +457,7 @@ export const createEvent = catchAsync(
           },
         },
         coverImage: eventImage[0],
+        eventVideo: eventVideo ? eventVideo[0] : null,
         registrationForm: {
           connect: {
             id: form.id,
@@ -484,12 +496,37 @@ export const updateEventEssentials = catchAsync(
     }
 
     let eventImage: string[] = [];
+    let eventVideo: string[] = [];
 
-    if (req.file) {
-      eventImage = await handleNormalUploads([req.file], {
+    const files = req.files as {
+      coverImage?: Express.Multer.File[];
+      eventVideo?: Express.Multer.File[];
+    };
+
+    if (files.coverImage && files.coverImage.length > 0) {
+      eventImage = await handleNormalUploads(files.coverImage, {
         entityName: `event-${name}`,
         folderName: "events",
       });
+      if (event.coverImage) {
+        await deleteUploadedFiles([event.coverImage], {
+          folderName: `events/${event.id}/media`,
+          entityName: `event-video`,
+        });
+      }
+    }
+
+    if (files.eventVideo && files.eventVideo.length > 0) {
+      eventVideo = await handleNormalUploads(files.eventVideo, {
+        entityName: `event-${name}`,
+        folderName: "events",
+      });
+      if (event.eventVideo) {
+        await deleteUploadedFiles([event.eventVideo], {
+          folderName: `events/${event.id}/media`,
+          entityName: `event-video`,
+        });
+      }
     }
 
     await prisma.event.update({
@@ -498,6 +535,7 @@ export const updateEventEssentials = catchAsync(
         coverImage: eventImage.length > 0 ? eventImage[0] : event.coverImage,
         name: name || event.name,
         description: description || event.description,
+        eventVideo: eventVideo.length > 0 ? eventVideo[0] : event.eventVideo,
         startDate: new Date(startDate) || event.startDate,
         endDate: new Date(startDate) || event.endDate,
         registrationStart: new Date(registrationStart) || event.registrationStart,

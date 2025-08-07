@@ -15,6 +15,8 @@ import { parseHtmlTemplate } from "../utils/parseHtmlTemplate";
 import { format } from "date-fns";
 import { getCurrentSeason } from "../lib/season";
 import { start } from "repl";
+import { handleNormalUploads } from "../utils/handleNormalUpload";
+import { randomUUID } from "crypto";
 
 const generateRandomPassword = (length = 10) => {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -214,7 +216,9 @@ export const registerToEvent = catchAsync(
       );
     }
 
-    const validatedInputs: any = event.registrationForm?.fields.map((formField) => {
+    const files = req.files as Express.Multer.File[];
+
+    const validatedInputs: any = event.registrationForm?.fields.map(async (formField) => {
       const userInput = formFields.find(
         (input: CustomFormResponse) => input.fieldId === formField.id
       );
@@ -226,11 +230,44 @@ export const registerToEvent = catchAsync(
         return;
       }
 
+      let uploadedFileUrl: string | undefined;
+      if (formField.type === "FILE" && userInput.value) {
+        if (!files) {
+          return next(new AppError(`Missing file for field: ${formField.name}`, 400));
+        }
+        const uploadedFile = files.find(
+          (file) => file.fieldname === formField.name
+        ) as Express.Multer.File;
+        if (!uploadedFile) {
+          throw new Error(`Missing required file for field: ${formField.name}`);
+        }
+
+        const maxSize = 10 * 1024 * 1024; // 10MB //TODO: make it dyanmic from the custom form
+        if (uploadedFile.size > maxSize) {
+          throw new Error(`File too large for ${formField.name}. Max size is 5MB`);
+        }
+
+        uploadedFileUrl = (
+          await handleNormalUploads(
+            [uploadedFile],
+            {
+              folderName: "events/Registration/responses",
+              entityName: uploadedFile.filename + randomUUID(),
+            },
+            true
+          )
+        )[0];
+      }
+
       if (formField.type === "SELECT" && !formField.options.includes(userInput.value)) {
         return next(new AppError(`Incorrect value for ${formField.name} `, 400));
       }
 
-      return { value: userInput.value, fieldId: formField.id, name: formField.name };
+      return {
+        value: formField.type === "FILE" ? uploadedFileUrl : userInput.value,
+        fieldId: formField.id,
+        name: formField.name,
+      };
     });
 
     console.log(validatedInputs);

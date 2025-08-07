@@ -166,6 +166,7 @@ Table Event {
   registrationForm CustomForm
   registrationFormId String [unique]
   coverImage String [not null]
+  eventVideo String
   gallery EventMedia [not null]
   speakers EventSpeaker [not null]
   sponsors EventSponsor [not null]
@@ -277,11 +278,20 @@ Table FoodOrder {
   eventId String [not null]
   menu FoodMenu [not null]
   menuId String [not null]
-  items String [not null]
-  comment String
+  additionalNotes String
   price String
   status OrderStatus [not null, default: 'pending']
   createdAt DateTime [default: `now()`, not null]
+  items FoodOrderItem [not null]
+}
+
+Table FoodOrderItem {
+  id String [pk]
+  order FoodOrder [not null]
+  orderId String [not null]
+  item String [not null]
+  quantity Int [not null, default: 1]
+  notes String
 }
 
 Table AgendaItem {
@@ -592,6 +602,8 @@ Ref: FoodOrder.userId > User.id
 Ref: FoodOrder.eventId > Event.id
 
 Ref: FoodOrder.menuId > FoodMenu.id
+
+Ref: FoodOrderItem.orderId > FoodOrder.id
 
 Ref: AgendaItem.eventDayId > EventDay.id [delete: Cascade]
 

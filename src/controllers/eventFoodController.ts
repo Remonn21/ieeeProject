@@ -3,9 +3,7 @@ import { NextFunction, Request, Response } from "express";
 
 import AppError from "../utils/appError";
 import { prisma } from "../lib/prisma";
-import { User } from "@prisma/client";
 import { deleteUploadedFiles, handleNormalUploads } from "../utils/handleNormalUpload";
-import { randomUUID } from "crypto";
 
 export const createFoodMenu = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -204,33 +202,6 @@ export const getFoodMenusForEvent = catchAsync(
   }
 );
 
-export const getEventFoodOrders = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { eventId } = req.params;
-
-    const [orders, totalOrders] = await Promise.all([
-      prisma.foodOrder.findMany({
-        where: {
-          eventId,
-        },
-      }),
-      prisma.foodOrder.count({
-        where: {
-          eventId,
-        },
-      }),
-    ]);
-
-    res.status(200).json({
-      status: "success",
-      data: {
-        orders,
-        total: totalOrders,
-      },
-    });
-  }
-);
-
 export const deleteFoodMenu = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id, menuId } = req.params;
@@ -257,42 +228,6 @@ export const deleteFoodMenu = catchAsync(
     res.status(200).json({
       status: "success",
       message: "Food menu deleted successfully",
-    });
-  }
-);
-
-export const submitFoodOrder = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user as User;
-    const { menuId, items, comment } = req.body;
-
-    if (!menuId || !items) {
-      return next(new AppError("Invalid menu or items", 400));
-    }
-
-    const menu = await prisma.foodMenu.findUnique({
-      where: { id: menuId },
-      include: { event: true },
-    });
-
-    if (!menu) {
-      return next(new AppError("Food menu not found", 404));
-    }
-
-    const order = await prisma.foodOrder.create({
-      data: {
-        user: { connect: { id: user.id } },
-        event: { connect: { id: menu.eventId } },
-        items,
-        menu: { connect: { id: menuId } },
-        comment,
-      },
-    });
-
-    res.status(201).json({
-      status: "success",
-      message: "Food order submitted successfully",
-      data: order,
     });
   }
 );

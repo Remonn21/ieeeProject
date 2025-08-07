@@ -243,6 +243,7 @@ model Event {
   registrationFormId String?     @unique
 
   coverImage String
+  eventVideo String?
   gallery    EventMedia[]
   // videos String[]
 
@@ -383,15 +384,26 @@ model FoodOrder {
   menu   FoodMenu @relation(fields: [menuId], references: [id])
   menuId String
 
-  items   String //used this way because it will be hard to add all the menu items one by one 
-  comment String?
-  price   String?
+  additionalNotes String?
+  price           String?
 
   status OrderStatus @default(pending)
 
   createdAt DateTime @default(now())
 
-  // items FoodOrderItem[]
+  items FoodOrderItem[]
+
+  @@index([eventId])
+}
+
+model FoodOrderItem {
+  id      String    @id @default(uuid())
+  order   FoodOrder @relation(fields: [orderId], references: [id])
+  orderId String
+
+  item     String
+  quantity Int     @default(1)
+  notes    String?
 }
 
 enum OrderStatus {
