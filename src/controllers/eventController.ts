@@ -593,7 +593,7 @@ export const deleteEvent = catchAsync(
       prisma.eventDay.deleteMany({
         where: { eventId: id },
       }),
-      prisma.foodMenu.deleteMany({
+      prisma.eventRestaurant.deleteMany({
         where: { eventId: id },
       }),
       prisma.foodOrder.deleteMany({

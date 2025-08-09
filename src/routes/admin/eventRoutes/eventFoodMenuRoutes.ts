@@ -20,9 +20,9 @@ const uploadImages = createUploadMiddleware("temp").fields([
   { name: "coverImage", maxCount: 1 },
 ]);
 
-router.get("/:id/food-menus", getFoodMenusForEvent);
-router.post("/:id/food-menus", uploadImages, createFoodMenu);
-router.patch("/:id/food-menus/:menuId", uploadImages, updateFoodMenu);
-router.delete("/:id/food-menus/:menuId", deleteFoodMenu);
+router.get("/:id/restaurants", getFoodMenusForEvent);
+router.post("/:id/restaurants", uploadImages, createFoodMenu);
+router.patch("/:id/restaurants/:menuId", uploadImages, updateFoodMenu);
+router.delete("/:id/restaurants/:menuId", deleteFoodMenu);
 
 export default router;

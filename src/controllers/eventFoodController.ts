@@ -27,7 +27,7 @@ export const createFoodMenu = catchAsync(
       prisma.event.findUnique({
         where: { id },
       }),
-      prisma.foodMenu.findFirst({
+      prisma.eventRestaurant.findFirst({
         where: { id: id, name },
       }),
     ]);
@@ -53,7 +53,7 @@ export const createFoodMenu = catchAsync(
       }),
     ]);
 
-    const menu = await prisma.foodMenu.create({
+    const menu = await prisma.eventRestaurant.create({
       data: {
         name,
         coverImage: coverImage[0],
@@ -79,7 +79,7 @@ export const updateFoodMenu = catchAsync(
       coverImage?: Express.Multer.File[];
     };
 
-    const menu = await prisma.foodMenu.findUnique({
+    const menu = await prisma.eventRestaurant.findUnique({
       where: { id_eventId: { id: menuId, eventId } },
     });
 
@@ -119,7 +119,7 @@ export const updateFoodMenu = catchAsync(
       .filter((image) => !imagesToBeRemoved?.includes(image))
       .concat(menuImages || []);
 
-    const existingMenu = await prisma.foodMenu.findUnique({
+    const existingMenu = await prisma.eventRestaurant.findUnique({
       where: {
         id_eventId: { id: menuId, eventId },
       },
@@ -129,7 +129,7 @@ export const updateFoodMenu = catchAsync(
       return next(new AppError("Food menu not found", 404));
     }
 
-    const updatedMenu = await prisma.foodMenu.update({
+    const updatedMenu = await prisma.eventRestaurant.update({
       where: { id: menuId },
       data: {
         name,
@@ -184,7 +184,7 @@ export const getFoodMenusForEvent = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { eventId } = req.params;
 
-    const menus = await prisma.foodMenu.findMany({
+    const menus = await prisma.eventRestaurant.findMany({
       where: { eventId },
     });
 
@@ -206,7 +206,7 @@ export const deleteFoodMenu = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id, menuId } = req.params;
 
-    const menu = await prisma.foodMenu.findUnique({
+    const menu = await prisma.eventRestaurant.findUnique({
       where: { id_eventId: { id: menuId, eventId: id } },
     });
 
@@ -223,7 +223,7 @@ export const deleteFoodMenu = catchAsync(
       entityName: `menu-images`,
     });
 
-    await prisma.foodMenu.delete({ where: { id: menuId } });
+    await prisma.eventRestaurant.delete({ where: { id: menuId } });
 
     res.status(200).json({
       status: "success",

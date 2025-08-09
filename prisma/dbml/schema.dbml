@@ -173,7 +173,7 @@ Table Event {
   partners EventPartner [not null]
   eventDays EventDay [not null]
   attenandances EventAttendance [not null]
-  foodMenus FoodMenu [not null]
+  restaurant EventRestaurant [not null]
   foodOrders FoodOrder [not null]
 }
 
@@ -256,14 +256,14 @@ Table EventDay {
   agendaItems AgendaItem [not null]
 }
 
-Table FoodMenu {
+Table EventRestaurant {
   id String [pk]
   coverImage String [not null]
   name String [not null]
   event Event [not null]
   eventId String [not null]
   menuImages String[] [not null]
-  orders FoodOrder [not null]
+  orders FoodOrderItem [not null]
 
   indexes {
     (id, eventId) [unique]
@@ -276,8 +276,6 @@ Table FoodOrder {
   userId String [not null]
   event Event [not null]
   eventId String [not null]
-  menu FoodMenu [not null]
-  menuId String [not null]
   additionalNotes String
   price String
   status OrderStatus [not null, default: 'pending']
@@ -289,6 +287,8 @@ Table FoodOrderItem {
   id String [pk]
   order FoodOrder [not null]
   orderId String [not null]
+  restaurant EventRestaurant [not null]
+  restaurantId String [not null]
   item String [not null]
   quantity Int [not null, default: 1]
   notes String
@@ -601,15 +601,15 @@ Ref: EventPartner.photoId > SponsorPhoto.id [delete: Cascade]
 
 Ref: EventDay.eventId > Event.id
 
-Ref: FoodMenu.eventId > Event.id
+Ref: EventRestaurant.eventId > Event.id
 
 Ref: FoodOrder.userId > User.id
 
 Ref: FoodOrder.eventId > Event.id
 
-Ref: FoodOrder.menuId > FoodMenu.id
-
 Ref: FoodOrderItem.orderId > FoodOrder.id
+
+Ref: FoodOrderItem.restaurantId > EventRestaurant.id
 
 Ref: AgendaItem.eventDayId > EventDay.id [delete: Cascade]
 

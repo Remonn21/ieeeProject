@@ -11,15 +11,27 @@ const itemsSchema = z
   .min(1, "At least one item is required");
 
 export const createFoodOrderSchema = z.object({
-  menuId: z.string().uuid(),
+  order: z
+    .array(
+      z.object({
+        menuId: z.string().uuid(),
+        items: itemsSchema,
+      })
+    )
+    .min(1, "At least one order is required"),
   additionalNotes: z.string().optional(),
-  items: itemsSchema,
 });
 
 export const updateFoodOrderSchema = z.object({
   menuId: z.string().uuid().optional(),
-  items: itemsSchema.optional(),
-  comment: z.string().optional(),
+  order: z
+    .array(
+      z.object({
+        menuId: z.string().uuid(),
+        items: itemsSchema,
+      })
+    )
+    .optional(),
   additionalNotes: z.string().optional(),
 });
 

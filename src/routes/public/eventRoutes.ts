@@ -31,7 +31,7 @@ router.post(
 );
 
 router.get(
-  "/:eventId/food-menu",
+  "/:eventId/restaurants",
   protect,
   isAcceptedForEventAccess,
   getFoodMenusForEvent

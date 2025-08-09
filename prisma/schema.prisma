@@ -255,7 +255,7 @@ model Event {
 
   attenandances EventAttendance[]
 
-  foodMenus  FoodMenu[]
+  restaurant EventRestaurant[]
   foodOrders FoodOrder[]
 }
 
@@ -346,16 +346,16 @@ model EventDay {
   agendaItems AgendaItem[]
 }
 
-model FoodMenu {
-  id         String      @id @default(uuid())
+model EventRestaurant {
+  id         String          @id @default(uuid())
   coverImage String
   name       String
-  event      Event       @relation(fields: [eventId], references: [id])
+  event      Event           @relation(fields: [eventId], references: [id])
   eventId    String
   menuImages String[]
   // day        EventDay? @relation(fields: [eventDayId], references: [id])
   // eventDayId String?   @unique
-  orders     FoodOrder[]
+  orders     FoodOrderItem[]
 
   @@unique([id, eventId])
 }
@@ -381,9 +381,6 @@ model FoodOrder {
   event   Event  @relation(fields: [eventId], references: [id])
   eventId String
 
-  menu   FoodMenu @relation(fields: [menuId], references: [id])
-  menuId String
-
   additionalNotes String?
   price           String?
 
@@ -400,6 +397,9 @@ model FoodOrderItem {
   id      String    @id @default(uuid())
   order   FoodOrder @relation(fields: [orderId], references: [id])
   orderId String
+
+  restaurant   EventRestaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId String
 
   item     String
   quantity Int     @default(1)

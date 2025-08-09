@@ -17,11 +17,14 @@ import memberRoutes from "./memberRoutes";
 import seasonRoutes from "./seasonRoutes";
 import selectorRoutes from "./selectorRoutes";
 import { protect } from "../../controllers/authController";
+import { isSuperAdmin } from "../../middlewares/isAdmin";
 
 const router = Router();
 
 router.use("/selectors", selectorRoutes);
 router.use(protect);
+
+router.use(isSuperAdmin);
 
 router.use("/users", userRoutes); //TODO:remove the create from here
 router.use("/members", memberRoutes);

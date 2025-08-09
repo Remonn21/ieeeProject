@@ -8,33 +8,46 @@ import { User } from "@prisma/client";
 export const submitFoodOrder = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const user = req.user as User;
-    const { menuId, items, additionalNotes } = req.body;
+    const { order, additionalNotes } = req.body;
 
-    if (!menuId || !items) {
-      return next(new AppError("Invalid menu or items", 400));
-    }
+    const menuIds = order.map((item: any) => item.menuId);
 
-    const menu = await prisma.foodMenu.findUnique({
-      where: { id: menuId },
+    const menuDocs = await prisma.eventRestaurant.findMany({
+      where: {
+        id: {
+          in: menuIds,
+        },
+      },
       include: { event: true },
     });
 
-    if (!menu) {
-      return next(new AppError("Food menu not found", 404));
+    if (menuDocs.length !== menuIds.length) {
+      return next(new AppError("Invalid menu id provided", 400));
     }
 
-    const order = await prisma.foodOrder.create({
+    const orderItems = order.map((orderItem: any) => {
+      const menu = menuDocs.find((menu) => menu.id === orderItem.menuId);
+      if (!menu || !orderItem.items) {
+        return next(new AppError("Invalid menu id provided", 400));
+      }
+
+      const items = orderItem.items.map((item: any) => ({
+        item: item.item,
+        quantity: item.quantity,
+        notes: item.notes,
+        restaurant: { connect: { id: menu.id } },
+      }));
+
+      return items;
+    });
+
+    const orderDoc = await prisma.foodOrder.create({
       data: {
         user: { connect: { id: user.id } },
-        event: { connect: { id: menu.eventId } },
+        event: { connect: { id: menuDocs[0].eventId } },
         items: {
-          create: items.map((item: any) => ({
-            item: item.item,
-            quantity: item.quantity,
-            notes: item.notes,
-          })),
+          create: orderItems.flat(),
         },
-        menu: { connect: { id: menuId } },
         additionalNotes,
       },
     });
@@ -42,7 +55,7 @@ export const submitFoodOrder = catchAsync(
     res.status(201).json({
       status: "success",
       message: "Food order submitted successfully",
-      data: order,
+      data: { order: orderDoc },
     });
   }
 );
