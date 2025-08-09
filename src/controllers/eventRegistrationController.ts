@@ -171,6 +171,7 @@ export const getEventRegistration = catchAsync(
     res.status(200).json({
       status: "success",
       data: {
+        formId: event.registrationFormId,
         fields: [...(event.registrationForm?.fields as Array<any>)],
         coverImage: event.coverImage,
         registrationStart: event.registrationForm?.startDate,
@@ -186,9 +187,16 @@ export const registerToEvent = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    const { formFields } = req.body;
-
+    const bodyFormFields = req.body?.formFields;
     let user: any = req?.user as User;
+
+    const formMap: Record<string, any> = Array.isArray(bodyFormFields)
+      ? Object.fromEntries(
+          bodyFormFields.map((x: { fieldId: string; value: any }) => [x.fieldId, x.value])
+        )
+      : bodyFormFields && typeof bodyFormFields === "object"
+        ? bodyFormFields
+        : {};
 
     const event = await prisma.event.findUnique({
       where: {
@@ -203,74 +211,83 @@ export const registerToEvent = catchAsync(
       },
     });
 
-    if (!event) {
-      return next(new AppError("Event not found", 404));
+    if (!event) throw new AppError("Event not found", 404);
+    if (!event.registrationForm || event.registrationForm.fields.length === 0) {
+      throw new AppError("Registration form not configured for this event", 400);
     }
 
-    if (user && !user.committeeId && event.private) {
-      return next(
-        new AppError(
-          "This event is only available to IEEE BUB SB members, if you are a member please login with your IEEE BUB SB credentials",
-          401
-        )
+    if (event.private && !(user && user.committeeId)) {
+      throw new AppError(
+        "This event is only available to IEEE BUB SB members. Please sign in with your IEEE BUB SB credentials.",
+        401
       );
     }
 
     const files = req.files as Express.Multer.File[];
 
-    const validatedInputs: any = event.registrationForm?.fields.map(async (formField) => {
-      const userInput = formFields.find(
-        (input: CustomFormResponse) => input.fieldId === formField.id
-      );
+    const validatedInputs: any = await Promise.all(
+      event.registrationForm.fields.map(async (field) => {
+        const raw = formMap[field.id];
 
-      if (!userInput || !userInput.value) {
-        if (formField.required) {
-          return next(new AppError(`Missing required field: ${formField.name} `, 400));
-        }
-        return;
-      }
-
-      let uploadedFileUrl: string | undefined;
-      if (formField.type === "FILE" && userInput.value) {
-        if (!files) {
-          return next(new AppError(`Missing file for field: ${formField.name}`, 400));
-        }
-        const uploadedFile = files.find(
-          (file) => file.fieldname === formField.name
-        ) as Express.Multer.File;
-        if (!uploadedFile) {
-          throw new Error(`Missing required file for field: ${formField.name}`);
+        // Required check (non-FILE)
+        if (field.type !== "FILE") {
+          if (field.required && (raw === undefined || raw === null || raw === "")) {
+            throw new AppError(`Missing required field: ${field.name}`, 400);
+          }
         }
 
-        const maxSize = 10 * 1024 * 1024; // 10MB //TODO: make it dyanmic from the custom form
-        if (uploadedFile.size > maxSize) {
-          throw new Error(`File too large for ${formField.name}. Max size is 5MB`);
+        if (field.type === "SELECT" && raw !== undefined) {
+          const allowed = field.options ?? [];
+          if (!allowed.includes(raw)) {
+            throw new AppError(`Incorrect value for ${field.name}`, 400);
+          }
         }
 
-        uploadedFileUrl = (
-          await handleNormalUploads(
-            [uploadedFile],
-            {
-              folderName: "events/Registration/responses",
-              entityName: uploadedFile.filename + randomUUID(),
-            },
-            true
-          )
-        )[0];
-      }
+        if (field.type === "FILE") {
+          // For files, ignore body value; use req.files
 
-      if (formField.type === "SELECT" && !formField.options.includes(userInput.value)) {
-        return next(new AppError(`Incorrect value for ${formField.name} `, 400));
-      }
+          const uploadedFile =
+            files.find(
+              (f) =>
+                f.fieldname.slice(
+                  f.fieldname.indexOf("[") + 1,
+                  f.fieldname.indexOf("]")
+                ) === field.id
+            ) || console.log("FILES", files);
+          if (field.required && !uploadedFile) {
+            throw new AppError(`Missing file for field: ${field.name}`, 400);
+          }
+          if (uploadedFile) {
+            const maxBytes =
+              field.maxFileSize && field.maxFileSize > 0
+                ? field.maxFileSize * 1024 * 1024
+                : 5 * 1024 * 1024; // default 5MB
+            if (uploadedFile.size > maxBytes) {
+              throw new AppError(
+                `File too large for ${field.name}. Max size is ${Math.round(maxBytes / (1024 * 1024))}MB`,
+                400
+              );
+            }
+            const [url] = await handleNormalUploads(
+              [uploadedFile],
+              {
+                folderName: `events/registrations/responses/${event.id}`,
+                entityName: `${uploadedFile.originalname}.${Date.now()}`,
+              },
+              true
+            );
+            return { fieldId: field.id, name: field.name, value: url };
+          }
+          return undefined; // not required and not provided
+        }
 
-      return {
-        value: formField.type === "FILE" ? uploadedFileUrl : userInput.value,
-        fieldId: formField.id,
-        name: formField.name,
-      };
-    });
-
-    console.log(validatedInputs);
+        // Non-file field
+        if (raw === undefined || raw === null || raw === "") {
+          return undefined; // optional & missing
+        }
+        return { fieldId: field.id, name: field.name, value: raw };
+      })
+    );
 
     const name = validatedInputs.find(
       (inputField: any) => inputField?.name === "name"
@@ -279,6 +296,10 @@ export const registerToEvent = catchAsync(
     const email = validatedInputs.find(
       (inputField: any) => inputField?.name === "email"
     ).value;
+
+    // checking if email is required and not provided
+
+    // TODO:MAKE VALIDAITION IF EMAIL IS REQUIRED AND NOT PROVIDED
 
     //the  user may have attended prev event and we have data for him (from prev event or old member)
 
@@ -310,28 +331,64 @@ export const registerToEvent = catchAsync(
       }
     }
 
-    const submission = await prisma.customFormSubmission.create({
-      data: {
-        formId: event.registrationForm?.id!,
-        userId: user ? user.id : null,
-        responses: {
-          create: filteredInputs.map((input: any) => ({
-            fieldId: input.fieldId,
-            value: input.value,
-          })),
-        },
-      },
-    });
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Create lightweight registration first – hits UNIQUE(eventId, userId)
+        const reg = await tx.eventRegistration.create({
+          data: { eventId: id, userId: user.id, status: "pending" },
+        });
 
-    await prisma.eventRegistration.create({
-      data: {
-        eventId: id,
+        // Now create the submission using the already-uploaded URLs
+        const submission = await tx.customFormSubmission.create({
+          data: {
+            formId: event.registrationForm?.id!,
+            userId: user ? user.id : null,
+            userEmail: email ?? null,
+            responses: {
+              create: filteredInputs.map((input: any) => ({
+                fieldId: input.fieldId,
+                value: input.value,
+              })),
+            },
+          },
+        });
 
-        userId: user ? user.id : null,
-        status: "pending",
-        submissionId: submission.id,
-      },
-    });
+        await tx.eventRegistration.update({
+          where: { id: reg.id },
+          data: { submissionId: submission.id },
+        });
+      });
+
+      res.status(201).json({ status: "success", message: "Registered" });
+    } catch (err: any) {
+      if (err.code === "P2002") {
+        throw new AppError("Already registered", 409);
+      }
+      throw err;
+    }
+
+    // const submission = await prisma.customFormSubmission.create({
+    //   data: {
+    //     formId: event.registrationForm?.id!,
+    //     userId: user ? user.id : null,
+    //     responses: {
+    //       create: filteredInputs.map((input: any) => ({
+    //         fieldId: input.fieldId,
+    //         value: input.value,
+    //       })),
+    //     },
+    //   },
+    // });
+
+    // await prisma.eventRegistration.create({
+    //   data: {
+    //     eventId: id,
+
+    //     userId: user ? user.id : null,
+    //     status: "pending",
+    //     submissionId: submission.id,
+    //   },
+    // });
 
     res.status(200).json({
       status: "success",

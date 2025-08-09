@@ -43,7 +43,7 @@ export const handleNormalUploads = async (
 
   const basePath = path.join(
     process.cwd(),
-    isPrivate ? "private" : "uploads",
+    isPrivate ? "privateUploads" : "uploads",
     options.folderName,
     slugifiedEntityName
   );
@@ -58,11 +58,14 @@ export const handleNormalUploads = async (
       .join(options.folderName, slugifiedEntityName, file.originalname)
       .replace(/\\/g, "/");
 
+    const fullUrl = isPrivate
+      ? `${process.env.PRIVATE_STATIC_URL}/${relativeUrl}`
+      : `${process.env.BASE_STATIC_URL}/${relativeUrl}`;
     if (!options.fileData) {
-      return `${process.env.BASE_STATIC_URL}/${relativeUrl}`;
+      return fullUrl;
     } else {
       return {
-        url: `${process.env.BASE_STATIC_URL}/${relativeUrl}`,
+        url: fullUrl,
         fileName: file.originalname,
         size: file.size,
         extName: path.extname(file.originalname).toLowerCase(),

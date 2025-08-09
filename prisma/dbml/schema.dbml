@@ -372,6 +372,7 @@ Table CustomFormField {
   max Int
   pattern String
   options String[] [not null]
+  maxFileSize Int
   form CustomForm
   formId String
   responses CustomFormResponse [not null]
@@ -383,9 +384,14 @@ Table CustomFormSubmission {
   formId String [not null]
   user User
   userId String
+  userEmail String
   submittedAt DateTime [default: `now()`, not null]
   responses CustomFormResponse [not null]
   registration EventRegistration
+
+  indexes {
+    (formId, userEmail) [unique]
+  }
 }
 
 Table CustomFormResponse {

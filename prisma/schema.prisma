@@ -535,6 +535,7 @@ model CustomFormField {
   max         Int?
   pattern     String? //for custom validations (regex) for text and email
   options     String[]
+  maxFileSize Int? //in MBs for file uploads
 
   form      CustomForm?          @relation(fields: [formId], references: [id], onDelete: Cascade)
   formId    String?
@@ -549,10 +550,15 @@ model CustomFormSubmission {
   user   User?   @relation(fields: [userId], references: [id])
   userId String?
 
+  userEmail String?
+
   submittedAt DateTime             @default(now())
   responses   CustomFormResponse[]
 
   registration EventRegistration? @relation("EventSubmission")
+
+  @@unique([formId, userEmail])
+  @@index([formId, userEmail])
 }
 
 model CustomFormResponse {

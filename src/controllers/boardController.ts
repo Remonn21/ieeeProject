@@ -47,7 +47,7 @@ export const getBoard = catchAsync(
       selectedSeasons.push(currentSeason.id);
     }
 
-    if (allSeasons) {
+    if (allSeasons && allSeasons === "true") {
       const seasons = await prisma.season.findMany({ select: { id: true } });
       selectedSeasons.push(...seasons.map((s) => s.id));
     }
@@ -68,23 +68,23 @@ export const getBoard = catchAsync(
       },
     });
 
-    const groupedBySeason: Record<string, typeof boards> = {};
+    // const groupedBySeason: Record<string, typeof boards> = {};
 
-    if (allSeasons) {
-      for (const board of boards) {
-        const seasonName = board.season?.name || "Unknown";
+    // if (allSeasons) {
+    //   for (const board of boards) {
+    //     const seasonName = board.season?.name || "Unknown";
 
-        if (!groupedBySeason[seasonName]) {
-          groupedBySeason[seasonName] = [];
-        }
+    //     if (!groupedBySeason[seasonName]) {
+    //       groupedBySeason[seasonName] = [];
+    //     }
 
-        groupedBySeason[seasonName].push(board);
-      }
-    }
+    //     groupedBySeason[seasonName].push(board);
+    //   }
+    // }
 
     res.status(200).json({
       status: "success",
-      data: { boards: allSeasons ? groupedBySeason : boards },
+      data: { boards: boards },
     });
   }
 );

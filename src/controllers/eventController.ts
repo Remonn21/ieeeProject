@@ -104,10 +104,15 @@ export const getEventDetails = catchAsync(
                 url: true,
               },
             },
+
             speaker: {
               select: {
                 id: true,
                 name: true,
+                title: true,
+                bio: true,
+                socialLinks: true,
+                job: true,
               },
             },
           },
@@ -134,7 +139,6 @@ export const getEventDetails = catchAsync(
                 speaker: {
                   select: {
                     id: true,
-                    name: true,
                   },
                 },
               },
@@ -154,6 +158,19 @@ export const getEventDetails = catchAsync(
       speakers: event?.speakers.map((s) => ({
         name: s.speaker.name,
         photo: s.photo?.url,
+      })),
+      eventDays: event?.eventDays.map((day) => ({
+        ...day,
+        agendaItems: day.agendaItems.map((item) => {
+          const speaker = event.speakers.find((s) => s.speaker.id === item.speaker.id);
+          return {
+            ...item,
+            speaker: {
+              ...speaker?.speaker,
+              photo: speaker?.photo?.url,
+            },
+          };
+        }),
       })),
       sponsors: event?.sponsors.map((s) => ({
         name: s.sponsor.name,
@@ -365,6 +382,7 @@ export const createEvent = catchAsync(
       name,
       description,
       startDate,
+      endDate,
       category,
       registrationStart,
       registrationEnd,
@@ -387,7 +405,7 @@ export const createEvent = catchAsync(
         name,
         description,
         startDate: new Date(startDate),
-        endDate: new Date(startDate),
+        endDate: new Date(endDate),
         registrationStart: new Date(registrationStart),
         registrationEnd: new Date(registrationEnd),
         coverImage: "",

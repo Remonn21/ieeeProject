@@ -20,8 +20,8 @@ import { protect } from "../../controllers/authController";
 
 const router = Router();
 
-router.use(protect);
 router.use("/selectors", selectorRoutes);
+router.use(protect);
 
 router.use("/users", userRoutes); //TODO:remove the create from here
 router.use("/members", memberRoutes);

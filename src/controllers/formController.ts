@@ -156,67 +156,113 @@ export const createForm = catchAsync(
   }
 );
 
-export const updateForm = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.params;
-    const { name, description, startDate, endDate, type, fields } = req.body;
-    const form = await prisma.customForm.findUnique({
-      where: { id },
-    });
+export const updateForm = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, description, startDate, endDate, type, fields = [] } = req.body;
 
-    if (!form) {
-      return next(new AppError("Form not found", 404));
-    }
-    if (!allowedFormTypes.includes(type)) {
-      return next(new AppError("Invalid form type", 400));
-    }
+  const form = await prisma.customForm.findUnique({
+    where: { id },
+    include: { fields: { select: { id: true } } },
+  });
+  if (!form) throw new AppError("Form not found", 404);
 
-    if (form.isRegistrationForm) {
-      const requiredFields = fields.filter(
-        (field: any) => field.name === "email" || field.name === "phone"
-      );
-      if (requiredFields.length < 2) {
-        return next(
-          new AppError("Registration forms must have 'email' and 'name' field", 400)
-        );
-      }
-    }
-    const updatedFields = fields.map((field: any) => {
-      if (!allowedFieldTypes.includes(field.type.toUpperCase())) {
-        throw new AppError("Invalid field type", 400);
-      }
-      return {
-        label: field.label,
-        name: field.name,
-        required: field.required ?? false,
-        min: field.min ?? null,
-        max: field.max ?? null,
-        placeholder: field.placeholder,
-        options: field.options,
-        type: field.type.toUpperCase(),
-      };
-    });
-
-    const updatedForm = await prisma.customForm.update({
-      where: { id },
-      data: {
-        name,
-        startDate,
-        endDate,
-        description: cleanHtml(description),
-        type: type.toUpperCase() as FormType,
-        fields: {
-          update: updatedFields,
-        },
-      },
-    });
-
-    res.status(200).json({
-      status: "success",
-      data: updatedForm,
-    });
+  const normalizedType = String(type || "").toUpperCase();
+  if (!allowedFormTypes.includes(normalizedType)) {
+    throw new AppError("Invalid form type", 400);
   }
-);
+
+  const start = startDate ? new Date(startDate) : null;
+  const end = endDate ? new Date(endDate) : null;
+  if (start && end && start > end) {
+    throw new AppError("startDate must be before endDate", 400);
+  }
+
+  if (form.isRegistrationForm) {
+    const names = new Set(fields.map((f: any) => String(f.name || "").toLowerCase()));
+    if (!names.has("email") || !names.has("name")) {
+      throw new AppError("Registration forms must have 'email' and 'name' fields", 400);
+    }
+  }
+
+  const allowedFieldTypesSet = new Set(
+    allowedFieldTypes.map((t: string) => t.toUpperCase())
+  );
+
+  type IncomingField = {
+    id?: string;
+    label: string;
+    name: string;
+    required?: boolean;
+    min?: number | null;
+    max?: number | null;
+    placeholder?: string | null;
+    options?: string[] | null;
+    type: string;
+  };
+
+  const inc: IncomingField[] = Array.isArray(fields) ? fields : [];
+
+  const toCreate: any[] = [];
+  const toUpdate: any[] = [];
+  const keepIds: string[] = [];
+
+  for (const f of inc) {
+    const t = String(f.type || "").toUpperCase();
+    if (!allowedFieldTypesSet.has(t)) {
+      throw new AppError(`Invalid field type: ${f.type}`, 400);
+    }
+
+    const data = {
+      label: f.label,
+      name: f.name,
+      required: f.required ?? false,
+      min: f.min ?? null,
+      max: f.max ?? null,
+      placeholder: f.placeholder ?? null,
+      options: f.options ?? [],
+      type: t as any,
+    };
+
+    if (f.id) {
+      keepIds.push(f.id);
+      toUpdate.push({
+        where: { id: f.id },
+        data,
+      });
+    } else {
+      toCreate.push(data);
+    }
+  }
+
+  // Anything in DB but not in keepIds should be deleted
+  const existingIds = form.fields.map((x) => x.id);
+  const toDeleteIds = existingIds.filter((x) => !keepIds.includes(x));
+
+  const updatedForm = await prisma.customForm.update({
+    where: { id },
+    data: {
+      name,
+      startDate: start ?? undefined,
+      endDate: end ?? undefined,
+      description: cleanHtml(description),
+      type: normalizedType as FormType,
+      fields: {
+        // remove dropped fields
+        deleteMany: toDeleteIds.length ? { id: { in: toDeleteIds } } : undefined,
+        // update existing
+        update: toUpdate,
+        // create new
+        create: toCreate,
+      },
+    },
+    include: { fields: true },
+  });
+
+  res.status(200).json({
+    status: "success",
+    data: updatedForm,
+  });
+});
 
 export const getFormDetails = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {

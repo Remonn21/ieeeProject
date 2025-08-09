@@ -6,6 +6,7 @@ export const isSuperAdmin = (req: Request, res: Response, next: NextFunction) =>
 
   if (
     !user ||
+    !user.internalRoleId ||
     (user.seasonMemberships[0].role !== "HEAD" &&
       user.seasonMemberships[0].role !== "EXCOM")
   ) {

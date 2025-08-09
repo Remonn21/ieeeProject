@@ -11,9 +11,10 @@ import apiRoutes from "./routes";
 // import employeeRoutes from "./routes/company/employeeRoutes";
 // import companyRoleRoutes from "./routes/superAdmin/companyRoleRoutes";
 import ErrorController from "./controllers/ErrorController";
-import { UserWithRelations } from "./controllers/authController";
+import { protect, UserWithRelations } from "./controllers/authController";
 import AppError from "./utils/appError";
 import path from "path";
+import { isSuperAdmin } from "./middlewares/isAdmin";
 const app = express();
 
 declare global {
@@ -56,6 +57,18 @@ app.use(
     path.join(
       __dirname,
       process.env.NODE_ENV === "development" ? "../uploads" : "./uploads"
+    )
+  )
+);
+
+app.use(
+  "/private",
+  protect,
+  isSuperAdmin,
+  express.static(
+    path.join(
+      __dirname,
+      process.env.NODE_ENV === "development" ? "../privateUploads" : "./privateUploads"
     )
   )
 );
